@@ -3,14 +3,15 @@ package rajawali.scenegraph;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.opengl.Matrix;
-
 import rajawali.BaseObject3D;
 import rajawali.Camera;
 import rajawali.bounds.BoundingBox;
+import rajawali.bounds.BoundingSphere;
 import rajawali.bounds.IBoundingVolume;
+import rajawali.lights.ALight;
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
+import android.opengl.Matrix;
 
 
 /**
@@ -182,23 +183,47 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//TODO: Implement
 		RajLog.d("[" + this.getClass().getName() + "] Setting bounds based on member: " + member);
 		if (mMembers.size() != 0 && mParent != null) {return;}
-		BaseObject3D object = (BaseObject3D) member;
-		BoundingBox bcube = object.getGeometry().getBoundingBox();
-		bcube.transform(object.getModelMatrix());
-		RajLog.d("[" + this.getClass().getName() + "] Member bounding volume: " + bcube);
-		RajLog.d("[" + this.getClass().getName() + "] Member bounding position: " + object.getPosition());
-		Number3D position = object.getPosition();
-		Number3D min = bcube.getMin();
-		Number3D max = bcube.getMax();
-		double span_y = (2.0 * (max.y - min.y));
-		double span_x = (2.0 * (max.x - min.x));
-		double span_z = (2.0 * (max.z - min.z));
-		mMin.x = (float) (position.x - (span_x/2.0));
-		mMin.y = (float) (position.y - (span_y/2.0));
-		mMin.z = (float) (position.z - (span_z/2.0));
-		mMax.x = (float) (position.x + (span_x/2.0));
-		mMax.y = (float) (position.y + (span_y/2.0));
-		mMax.z = (float) (position.z + (span_z/2.0));
+		IBoundingVolume volume = member.getBoundingVolume();
+		BoundingBox bcube = null;
+		BoundingSphere bsphere = null;
+		BaseObject3D object = null;
+		Camera camera = null;
+		ALight light = null;
+		Number3D position = null;
+		double span_y = 0;
+		double span_x = 0;
+		double span_z = 0;
+		if (member instanceof BaseObject3D) {
+			object = (BaseObject3D) member;
+			position = object.getPosition();
+		} else if (member instanceof Camera) {
+			camera = (Camera) member;
+			position = camera.getPosition();
+		} else if (member instanceof ALight) {
+			light = (ALight) member;
+			position = light.getPosition();
+		}
+		if (volume instanceof BoundingBox) {
+			bcube = (BoundingBox) volume;
+			bcube.transform(object.getModelMatrix());
+			Number3D min = bcube.getMin();
+			Number3D max = bcube.getMax();
+			span_y = (max.y - min.y);
+			span_x = (max.x - min.x);
+			span_z = (max.z - min.z);
+		} else if (volume instanceof BoundingSphere) {
+			bsphere = (BoundingSphere) volume;
+			span_x = 2.0*bsphere.getRadius();
+			span_y = span_x;
+			span_z = span_x;
+		}
+		
+		mMin.x = (float) (position.x - span_x);
+		mMin.y = (float) (position.y - span_y);
+		mMin.z = (float) (position.z - span_z);
+		mMax.x = (float) (position.x + span_x);
+		mMax.y = (float) (position.y + span_y);
+		mMax.z = (float) (position.z + span_z);
 		calculatePoints();
 	}
 	

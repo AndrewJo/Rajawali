@@ -830,18 +830,35 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 		mChildren.clear();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#setGraphNode(rajawali.scenegraph.IGraphNode)
+	 */
 	public void setGraphNode(IGraphNode node) {
 		// TODO Auto-generated method stub
 		
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#getGraphNode()
+	 */
 	public IGraphNode getGraphNode() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#getBoundingVolume()
+	 */
 	public IBoundingVolume getBoundingVolume() {
-		// TODO Auto-generated method stub
-		return null;
+		if (mGeometry.hasBoundingBox() && !mGeometry.hasBoundingSphere()) {
+			return mGeometry.getBoundingBox();
+		} else if (mGeometry.hasBoundingSphere() && !mGeometry.hasBoundingBox()) {
+			return mGeometry.getBoundingSphere();
+		} else {
+			return mGeometry.getBoundingBox();
+		}
 	}
 }
