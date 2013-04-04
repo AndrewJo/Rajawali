@@ -20,6 +20,7 @@ import rajawali.materials.TextureManager;
 import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import rajawali.renderer.plugins.IRendererPlugin;
+import rajawali.scenegraph.IGraphNode;
 import rajawali.util.FPSUpdateListener;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
@@ -97,6 +98,19 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 
 	protected List<IRendererPlugin> mPlugins;
 
+	/**
+	 * Guarded by mChildren.
+	 */
+	protected IGraphNode mSceneGraph;
+	/**
+	 * Default to not using scene graph. This is for backwards
+	 * compatibility as well as efficiency for simple scenes.
+	 * NOT THREAD SAFE, as it is not expected to be changed beyond
+	 * initScene().
+	 */
+	protected boolean mUseSceneGraph = false;
+	protected boolean mDisplaySceneGraph = false;
+	
 	public RajawaliRenderer(Context context) {
 		mContext = context;
 		mChildren = Collections.synchronizedList(new CopyOnWriteArrayList<BaseObject3D>());
@@ -197,6 +211,10 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		for (int i = 0, j = mChildren.size(); i < j; i++)
 			mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
 
+		if (mDisplaySceneGraph) {
+        	mSceneGraph.displayGraph(mCamera, mPMatrix, mVMatrix);
+        }
+		
 		if (pickerInfo != null) {
 			pickerInfo.getPicker().createColorPickingTexture(pickerInfo);
 			pickerInfo.getPicker().unbindFrameBuffer();
@@ -421,10 +439,22 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 
 	public void addChild(BaseObject3D child) {
 		mChildren.add(child);
+		
+		if (mUseSceneGraph) {
+			if (mSceneGraph != null) {
+				mSceneGraph.addObject(child);
+			} else {
+				RajLog.w("[" + this.getClass().getName()
+					+ "] Can not add child to scene graph because no graph exists.");
+			}
+		}
 	}
 
 	public void clearChildren() {
 		mChildren.clear();
+		if (mUseSceneGraph && mSceneGraph != null) {
+			mSceneGraph.clear();
+		}
 	}
 
 	public void addPlugin(IRendererPlugin plugin) {
@@ -462,6 +492,9 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	public boolean removeChild(BaseObject3D child) {
+		if (mUseSceneGraph && mSceneGraph != null) {
+			mSceneGraph.removeObject(child);
+		}
 		return mChildren.remove(child);
 	}
 

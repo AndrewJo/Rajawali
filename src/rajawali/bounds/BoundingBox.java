@@ -118,6 +118,10 @@ public class BoundingBox implements IBoundingVolume {
 			if(vertex.z > mMax.z) mMax.z = vertex.z;
 		}
 		
+		calculatePoints();
+	}
+	
+	protected void calculatePoints() {
 		// -- bottom plane
 		// -- -x, -y, -z
 		mPoints[0].setAll(mMin.x, mMin.y, mMin.z);
@@ -127,7 +131,7 @@ public class BoundingBox implements IBoundingVolume {
 		mPoints[2].setAll(mMax.x, mMin.y, mMax.z);
 		// --  x, -y, -z
 		mPoints[3].setAll(mMax.x, mMin.y, mMin.z);
-		
+
 		// -- top plane
 		// -- -x,  y, -z
 		mPoints[4].setAll(mMin.x, mMax.y, mMin.z);
@@ -198,5 +202,15 @@ public class BoundingBox implements IBoundingVolume {
 	
 	public String toString() {
 		return "BoundingBox min: " + mTransformedMin + " max: " + mTransformedMax;
+	}
+
+	public boolean contains(IBoundingVolume boundingVolume) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean isContainedBy(IBoundingVolume boundingVolume) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

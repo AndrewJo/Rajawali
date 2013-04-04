@@ -8,12 +8,14 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import rajawali.bounds.BoundingBox;
+import rajawali.bounds.IBoundingVolume;
 import rajawali.lights.ALight;
 import rajawali.materials.AMaterial;
 import rajawali.materials.ColorPickerMaterial;
 import rajawali.materials.TextureInfo;
 import rajawali.materials.TextureManager.TextureType;
 import rajawali.math.Number3D;
+import rajawali.scenegraph.IGraphNode;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
 import rajawali.visitors.INode;
@@ -826,5 +828,20 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 		for (int i = 0, j = mChildren.size(); i < j; i++)
 			mChildren.get(i).destroy();
 		mChildren.clear();
+	}
+
+	public void setGraphNode(IGraphNode node) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public IGraphNode getGraphNode() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public IBoundingVolume getBoundingVolume() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

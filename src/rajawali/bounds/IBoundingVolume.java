@@ -9,5 +9,7 @@ public interface IBoundingVolume {
 	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix);
 	public void transform(float[] matrix);
 	public boolean intersectsWith(IBoundingVolume boundingVolume);
+	public boolean contains(IBoundingVolume boundingVolume);
+	public boolean isContainedBy(IBoundingVolume boundingVolume);
 	public BaseObject3D getVisual();
 }
