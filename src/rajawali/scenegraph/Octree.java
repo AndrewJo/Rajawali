@@ -14,6 +14,7 @@ import rajawali.lights.ALight;
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
 import android.opengl.Matrix;
+import android.util.Log;
 
 
 /**
@@ -210,8 +211,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 			//bcube.transform(object.getModelMatrix());
 			Number3D min = bcube.getTransformedMin();
 			Number3D max = bcube.getTransformedMax();
-			//RajLog.d("[" + this.getClass().getName() + "] Object Min/Max: " + bcube.getMin() + "/" + bcube.getMax());
-			//RajLog.d("[" + this.getClass().getName() + "] Transformed Min/Max: " + min + "/" + max);
+			RajLog.d("[" + this.getClass().getName() + "] Object Min/Max: " + bcube.getMin() + "/" + bcube.getMax());
+			RajLog.d("[" + this.getClass().getName() + "] Transformed Min/Max: " + min + "/" + max);
 			span_z = (max.z - min.z);
 			span_y = (max.y - min.y);
 			span_x = (max.x - min.x);
@@ -229,13 +230,15 @@ public class Octree extends BoundingBox implements IGraphNode {
 		mMax.x = (float) (position.x + span_x);
 		mMax.y = (float) (position.y + span_y);
 		mMax.z = (float) (position.z + span_z);
+		mTransformedMin = mMin;
+		mTransformedMax = mMax;
 		
 		RajLog.d("[" + this.getClass().getName() + "] Position: " + position);
 		RajLog.d("[" + this.getClass().getName() + "] Spans: " + span_x + ", " + span_y + ", " + span_z);
 		RajLog.d("[" + this.getClass().getName() + "] Min/Max: " + mMin + "/" + mMax);
 		calculatePoints();
-		Matrix.setIdentityM(mMMatrix, 0);
-		transform(mMMatrix);
+		//Matrix.setIdentityM(mMMatrix, 0);
+		//transform(mMMatrix);
 	}
 	
 	protected void internalAddObject(IGraphNodeMember object) {
@@ -310,7 +313,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	}
 	
 	/**
-	 * Grows the three.
+	 * Grows the tree.
 	 */
 	protected void grow() {
 		RajLog.d("[" + this.getClass().getName() + "] Growing tree");
@@ -377,6 +380,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 			//We are a branch or leaf node
 			internalAddObject(object);
 		}
+		RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
+			+ mMembers.size() + "/" + mOutside.size());
 	}
 
 	/*
@@ -465,6 +470,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + mMin + "/" + mMax);
 		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
 		//		+ mMembers.size() + "/" + mOutside.size());
+		Matrix.setIdentityM(mMMatrix, 0);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 	}
 }
