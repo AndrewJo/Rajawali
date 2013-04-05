@@ -21,6 +21,7 @@ public class BoundingBox implements IBoundingVolume {
 	protected int mI;
 	protected Cube mVisualBox;
 	protected float[] mTmpMatrix = new float[16];
+	protected int mBoundingColor = 0xffffff00;
 	
 	public void copyPoints(Number3D[] pts){
 		
@@ -68,7 +69,7 @@ public class BoundingBox implements IBoundingVolume {
 			mVisualBox = new Cube(1);
 			mVisualBox.setMaterial(new SimpleMaterial());
 			mVisualBox.getMaterial().setUseColor(true);
-			mVisualBox.setColor(0xffffff00);
+			mVisualBox.setColor(mBoundingColor);
 			mVisualBox.setDrawingMode(GLES20.GL_LINE_LOOP);
 		}
 		
@@ -94,6 +95,14 @@ public class BoundingBox implements IBoundingVolume {
 	
 	public BaseObject3D getVisual() {
 		return mVisualBox;
+	}
+	
+	public void setBoundingColor(int color) {
+		mBoundingColor = color;
+	}
+	
+	public int getBoundingColor() {
+		return mBoundingColor;
 	}
 	
 	public void calculateBounds(Geometry3D geometry) {

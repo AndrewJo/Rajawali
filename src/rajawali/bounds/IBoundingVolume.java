@@ -12,4 +12,6 @@ public interface IBoundingVolume {
 	public boolean contains(IBoundingVolume boundingVolume);
 	public boolean isContainedBy(IBoundingVolume boundingVolume);
 	public BaseObject3D getVisual();
+	public void setBoundingColor(int color);
+	public int getBoundingColor();
 }

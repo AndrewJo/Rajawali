@@ -20,6 +20,7 @@ public class BoundingSphere implements IBoundingVolume {
 	protected Number3D mTmpPos;
 	protected float mDist, mMinDist, mScale;
 	protected float[] mScaleValues;
+	protected int mBoundingColor = 0xffffff00;
 	
 	public BoundingSphere() {
 		super();
@@ -36,6 +37,14 @@ public class BoundingSphere implements IBoundingVolume {
 	
 	public BaseObject3D getVisual() {
 		return mVisualSphere;
+	}
+	
+	public void setBoundingColor(int color) {
+		mBoundingColor = color;
+	}
+	
+	public int getBoundingColor() {
+		return mBoundingColor;
 	}
 	
 	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix) {

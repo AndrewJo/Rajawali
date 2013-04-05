@@ -1,7 +1,9 @@
 package rajawali.scenegraph;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import rajawali.BaseObject3D;
 import rajawali.Camera;
@@ -36,8 +38,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 	protected Octree mParent; //Parent partition;
 	protected Octree[] mChildren; //Child partitions
 	protected boolean mSplit = false; //Have we split to child partitions
-	protected ArrayList<IGraphNodeMember> mMembers; //A list of all the member objects
-	protected ArrayList<IGraphNodeMember> mOutside; //A list of all the objects outside the root
+	protected List<IGraphNodeMember> mMembers; //A list of all the member objects
+	protected List<IGraphNodeMember> mOutside; //A list of all the objects outside the root
 
 	protected int mOverlap = 10; //Partition overlap
 	protected int mGrowThreshold = 5; //Threshold at which to grow the graph
@@ -107,8 +109,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//Pre-allocate storage here to favor modification speed
 		mPosition = new Number3D(0, 0, 0);
 		mChildren = new Octree[CHILD_COUNT];
-		mMembers = new ArrayList<IGraphNodeMember>();
-		mOutside = new ArrayList<IGraphNodeMember>();
+		mMembers = Collections.synchronizedList(new CopyOnWriteArrayList<IGraphNodeMember>());
+		mOutside = Collections.synchronizedList(new CopyOnWriteArrayList<IGraphNodeMember>());
 	}
 	
 	/**
@@ -206,14 +208,14 @@ public class Octree extends BoundingBox implements IGraphNode {
 		if (volume instanceof BoundingBox) {
 			bcube = (BoundingBox) volume;
 			bcube.transform(object.getModelMatrix());
-			Number3D min = bcube.getMin();
-			Number3D max = bcube.getMax();
+			Number3D min = bcube.getTransformedMin();
+			Number3D max = bcube.getTransformedMax();
+			span_z = (max.z - min.z);
 			span_y = (max.y - min.y);
 			span_x = (max.x - min.x);
-			span_z = (max.z - min.z);
 		} else if (volume instanceof BoundingSphere) {
 			bsphere = (BoundingSphere) volume;
-			span_x = 2.0*bsphere.getRadius();
+			span_x = 2.0*bsphere.getRadius()*bsphere.getScale();
 			span_y = span_x;
 			span_z = span_x;
 		}
@@ -224,6 +226,10 @@ public class Octree extends BoundingBox implements IGraphNode {
 		mMax.x = (float) (position.x + span_x);
 		mMax.y = (float) (position.y + span_y);
 		mMax.z = (float) (position.z + span_z);
+		
+		RajLog.d("[" + this.getClass().getName() + "] Position: " + position);
+		RajLog.d("[" + this.getClass().getName() + "] Spans: " + span_x + ", " + span_y + ", " + span_z);
+		RajLog.d("[" + this.getClass().getName() + "] Min/Max: " + mMin + "/" + mMax);
 		calculatePoints();
 	}
 	
@@ -258,6 +264,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		for (int i = 0; i < CHILD_COUNT; ++i) {
 			mChildren[i] = new Octree(this, mMergeThreshold,
 					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
+			mChildren[i].mBoundingColor = mBoundingColor - 0x0000000F;
 		}
 		for (int j = 0; j < CHILD_COUNT; ++j) {
 			int member_count = mMembers.size();
@@ -342,6 +349,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//TODO: Handle recursive add posibility
 		if (mParent == null) {
 			//We are the root node
+			mBoundingColor = 0xFFFF0000;
 			if (mMembers.size() == 0) {
 				//Set bounds to the incoming objects bounding box
 				setBounds(object);
@@ -447,9 +455,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#displayGraph(boolean)
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
-		RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
+		if (mMembers.size() == 0 && mOutside.size() == 0 && mParent == null) {return;}
+		//RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
+		//RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + mMin + "/" + mMax);
+		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
+		//		+ mMembers.size() + "/" + mOutside.size());
 		Matrix.setIdentityM(mMMatrix, 0);
-		Matrix.translateM(mMMatrix, 0, -mPosition.x, mPosition.y, mPosition.z);
+		Matrix.translateM(mMMatrix, 0, mPosition.x, mPosition.y, mPosition.z);
 		transform(mMMatrix);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 	}
