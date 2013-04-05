@@ -185,7 +185,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//TODO: Implement
 		RajLog.d("[" + this.getClass().getName() + "] Setting bounds based on member: " + member);
 		if (mMembers.size() != 0 && mParent != null) {return;}
-		IBoundingVolume volume = member.getBoundingVolume();
+		IBoundingVolume volume = member.getTransformedBoundingVolume();
 		BoundingBox bcube = null;
 		BoundingSphere bsphere = null;
 		BaseObject3D object = null;
@@ -207,17 +207,18 @@ public class Octree extends BoundingBox implements IGraphNode {
 		}
 		if (volume instanceof BoundingBox) {
 			bcube = (BoundingBox) volume;
-			bcube.transform(object.getModelMatrix());
+			//bcube.transform(object.getModelMatrix());
 			Number3D min = bcube.getTransformedMin();
 			Number3D max = bcube.getTransformedMax();
-			RajLog.d("[" + this.getClass().getName() + "] Object Min/Max: " + bcube.getMin() + "/" + bcube.getMax());
-			RajLog.d("[" + this.getClass().getName() + "] Transformed Min/Max: " + min + "/" + max);
-			span_z = 5.0*(max.z - min.z);
-			span_y = 5.0*(max.y - min.y);
-			span_x = 5.0*(max.x - min.x);
+			//RajLog.d("[" + this.getClass().getName() + "] Object Min/Max: " + bcube.getMin() + "/" + bcube.getMax());
+			//RajLog.d("[" + this.getClass().getName() + "] Transformed Min/Max: " + min + "/" + max);
+			span_z = (max.z - min.z);
+			span_y = (max.y - min.y);
+			span_x = (max.x - min.x);
 		} else if (volume instanceof BoundingSphere) {
 			bsphere = (BoundingSphere) volume;
-			span_x = 2.0*bsphere.getRadius()*bsphere.getScale();
+			span_x = 2.0*bsphere.getScaledRadius();
+			RajLog.d("[" + this.getClass().getName() + "] Radius: " + span_x);
 			span_y = span_x;
 			span_z = span_x;
 		}
@@ -233,6 +234,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 		RajLog.d("[" + this.getClass().getName() + "] Spans: " + span_x + ", " + span_y + ", " + span_z);
 		RajLog.d("[" + this.getClass().getName() + "] Min/Max: " + mMin + "/" + mMax);
 		calculatePoints();
+		Matrix.setIdentityM(mMMatrix, 0);
+		transform(mMMatrix);
 	}
 	
 	protected void internalAddObject(IGraphNodeMember object) {
@@ -240,7 +243,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		if (mSplit) {
 			//Check if the object fits in our children
 			for (int i = 0; i < CHILD_COUNT; ++i) {
-				if (mChildren[i].contains(object.getBoundingVolume())) {
+				if (mChildren[i].contains(object.getTransformedBoundingVolume())) {
 					mChildren[i].addObject(object);
 					return; //Ensures only one child gets the object 
 					//TODO: Verify this is the desired behavior
@@ -274,7 +277,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			ArrayList<IGraphNodeMember> removed = new ArrayList<IGraphNodeMember>();
 			for (int i = 0; i < member_count; ++i) {
 				IGraphNodeMember member = mMembers.get(i);
-				if (mChildren[j].contains(member.getBoundingVolume())) {
+				if (mChildren[j].contains(member.getTransformedBoundingVolume())) {
 					//If the member fits in this child, move it to that child
 					mChildren[j].addObject(member);
 					removed.add(member);
@@ -358,7 +361,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 				addToMembers(object);
 			} else {
 				//Check if object is in bounds
-				if (contains(object.getBoundingVolume())) {
+				if (contains(object.getTransformedBoundingVolume())) {
 					//The object is fully in bounds
 					internalAddObject(object);
 				} else {
@@ -462,9 +465,6 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + mMin + "/" + mMax);
 		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
 		//		+ mMembers.size() + "/" + mOutside.size());
-		Matrix.setIdentityM(mMMatrix, 0);
-		Matrix.translateM(mMMatrix, 0, mPosition.x, mPosition.y, mPosition.z);
-		transform(mMMatrix);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 	}
 }

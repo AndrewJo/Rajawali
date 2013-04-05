@@ -114,7 +114,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 			if(mIsCamera)
 				mOrientation.inverseSelf();
 		}
-		if (mGraphNode != null) mGraphNode.updateObject(this);
+		if (mGraphNode != null) mGraphNode.updateObject(this); //TODO: This may cause problems
 	}
 
 	public void rotateAround(Number3D axis, float angle) {

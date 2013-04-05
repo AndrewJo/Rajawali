@@ -99,12 +99,21 @@ public class BoundingSphere implements IBoundingVolume {
 		return mRadius;
 	}
 	
+	public float getScaledRadius() {
+		return (mRadius*mScale);
+	}
+	
 	public Number3D getPosition() {
 		return mPosition;
 	}
 	
 	public float getScale() {
 		return mScale;
+	}
+	
+	@Override
+	public String toString() {
+		return "BoundingSphere radius: " + Float.toString(getScaledRadius());
 	}
 	
 	public boolean intersectsWith(IBoundingVolume boundingVolume) {

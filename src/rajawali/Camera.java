@@ -320,7 +320,7 @@ public class Camera extends ATransformable3D {
 		return null;
 	}
 
-	public IBoundingVolume getBoundingVolume() {
+	public IBoundingVolume getTransformedBoundingVolume() {
 		// TODO Auto-generated method stub
 		return null;
 	}

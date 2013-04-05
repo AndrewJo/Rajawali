@@ -209,6 +209,7 @@ public class BoundingBox implements IBoundingVolume {
 				(min.z < otherMax.z) && (max.z > otherMin.z);
 	}
 	
+	@Override
 	public String toString() {
 		return "BoundingBox min: " + mTransformedMin + " max: " + mTransformedMax;
 	}

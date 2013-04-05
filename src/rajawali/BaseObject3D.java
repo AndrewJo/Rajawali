@@ -189,6 +189,30 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 	protected void preRender() {
 		mGeometry.validateBuffers();
 	}
+	
+	public void calculateModelMatrix(final float[] parentMatrix) {
+		Matrix.setIdentityM(mMMatrix, 0);
+		Matrix.setIdentityM(mScalematrix, 0);
+		Matrix.scaleM(mScalematrix, 0, mScale.x, mScale.y, mScale.z);
+
+		Matrix.setIdentityM(mRotateMatrix, 0);
+
+		setOrientation();
+		if (mLookAt == null) {
+			mOrientation.toRotationMatrix(mRotateMatrix);
+		} else {
+			System.arraycopy(mLookAtMatrix, 0, mRotateMatrix, 0, 16);
+		}
+
+		Matrix.translateM(mMMatrix, 0, -mPosition.x, mPosition.y, mPosition.z);
+		Matrix.setIdentityM(mTmpMatrix, 0);
+		Matrix.multiplyMM(mTmpMatrix, 0, mMMatrix, 0, mScalematrix, 0);
+		Matrix.multiplyMM(mMMatrix, 0, mTmpMatrix, 0, mRotateMatrix, 0);
+		if (parentMatrix != null) {
+			Matrix.multiplyMM(mTmpMatrix, 0, parentMatrix, 0, mMMatrix, 0);
+			System.arraycopy(mTmpMatrix, 0, mMMatrix, 0, 16);
+		}
+	}
 
 	public void render(Camera camera, float[] projMatrix, float[] vMatrix, ColorPickerInfo pickerInfo) {
 		render(camera, projMatrix, vMatrix, null, pickerInfo);
@@ -216,27 +240,7 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 		preRender();
 
 		// -- move view matrix transformation first
-		Matrix.setIdentityM(mMMatrix, 0);
-		Matrix.setIdentityM(mScalematrix, 0);
-		Matrix.scaleM(mScalematrix, 0, mScale.x, mScale.y, mScale.z);
-
-		Matrix.setIdentityM(mRotateMatrix, 0);
-
-		setOrientation();
-		if (mLookAt == null) {
-			mOrientation.toRotationMatrix(mRotateMatrix);
-		} else {
-			System.arraycopy(mLookAtMatrix, 0, mRotateMatrix, 0, 16);
-		}
-
-		Matrix.translateM(mMMatrix, 0, -mPosition.x, mPosition.y, mPosition.z);
-		Matrix.setIdentityM(mTmpMatrix, 0);
-		Matrix.multiplyMM(mTmpMatrix, 0, mMMatrix, 0, mScalematrix, 0);
-		Matrix.multiplyMM(mMMatrix, 0, mTmpMatrix, 0, mRotateMatrix, 0);
-		if (parentMatrix != null) {
-			Matrix.multiplyMM(mTmpMatrix, 0, parentMatrix, 0, mMMatrix, 0);
-			System.arraycopy(mTmpMatrix, 0, mMMatrix, 0, 16);
-		}
+		calculateModelMatrix(parentMatrix);
 		Matrix.multiplyMM(mMVPMatrix, 0, vMatrix, 0, mMMatrix, 0);
 		Matrix.multiplyMM(mMVPMatrix, 0, projMatrix, 0, mMVPMatrix, 0);
 
@@ -852,13 +856,17 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getBoundingVolume()
 	 */
-	public IBoundingVolume getBoundingVolume() {
+	public IBoundingVolume getTransformedBoundingVolume() {
+		IBoundingVolume volume = null;
 		if (mGeometry.hasBoundingBox() && !mGeometry.hasBoundingSphere()) {
-			return mGeometry.getBoundingBox();
+			volume = mGeometry.getBoundingBox();
 		} else if (mGeometry.hasBoundingSphere() && !mGeometry.hasBoundingBox()) {
-			return mGeometry.getBoundingSphere();
+			volume = mGeometry.getBoundingSphere();
 		} else {
-			return mGeometry.getBoundingBox();
+			volume = mGeometry.getBoundingBox();
 		}
+		calculateModelMatrix(null);
+		volume.transform(mMMatrix);
+		return volume;
 	}
 }

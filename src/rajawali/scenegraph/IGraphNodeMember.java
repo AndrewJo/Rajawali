@@ -29,5 +29,5 @@ public interface IGraphNodeMember {
 	 * 
 	 * @return IBoundingVolume which encloses this members "geometry."
 	 */
-	public IBoundingVolume getBoundingVolume();
+	public IBoundingVolume getTransformedBoundingVolume();
 }
