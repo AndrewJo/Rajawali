@@ -210,9 +210,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 			bcube.transform(object.getModelMatrix());
 			Number3D min = bcube.getTransformedMin();
 			Number3D max = bcube.getTransformedMax();
-			span_z = (max.z - min.z);
-			span_y = (max.y - min.y);
-			span_x = (max.x - min.x);
+			RajLog.d("[" + this.getClass().getName() + "] Object Min/Max: " + bcube.getMin() + "/" + bcube.getMax());
+			RajLog.d("[" + this.getClass().getName() + "] Transformed Min/Max: " + min + "/" + max);
+			span_z = 5.0*(max.z - min.z);
+			span_y = 5.0*(max.y - min.y);
+			span_x = 5.0*(max.x - min.x);
 		} else if (volume instanceof BoundingSphere) {
 			bsphere = (BoundingSphere) volume;
 			span_x = 2.0*bsphere.getRadius()*bsphere.getScale();
