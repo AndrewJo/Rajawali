@@ -1,6 +1,7 @@
 package rajawali.scenegraph;
 
 import rajawali.bounds.IBoundingVolume;
+import rajawali.math.Number3D;
 
 /**
  * Generic interface which any member of IGraphNode must

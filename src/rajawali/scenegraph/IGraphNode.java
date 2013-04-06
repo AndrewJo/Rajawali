@@ -86,4 +86,11 @@ public interface IGraphNode {
 	 * @param display boolean indicating if the graph is to be displayed.
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix);
+	
+	/**
+	 * Sets the current callback listener for the scene graph.
+	 * 
+	 * @param listener The new callback listener.
+	 */
+	public void setListener(ISceneGraphCallbacks listener);
 }

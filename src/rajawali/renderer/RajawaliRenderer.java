@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -21,6 +22,7 @@ import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import rajawali.renderer.plugins.IRendererPlugin;
 import rajawali.scenegraph.IGraphNode;
+import rajawali.scenegraph.ISceneGraphCallbacks;
 import rajawali.util.FPSUpdateListener;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
@@ -36,10 +38,11 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.Matrix;
 import android.service.wallpaper.WallpaperService;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 
-public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
+public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGraphCallbacks {
 	protected final int GL_COVERAGE_BUFFER_BIT_NV = 0x8000;
 
 	protected Context mContext;
@@ -110,6 +113,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 */
 	protected boolean mUseSceneGraph = false;
 	protected boolean mDisplaySceneGraph = false;
+	protected AtomicBoolean mUpdateRootNode = new AtomicBoolean(false);
+	protected IGraphNode mTempSceneGraph;
 	
 	public RajawaliRenderer(Context context) {
 		mContext = context;
@@ -137,6 +142,10 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	public void onDrawFrame(GL10 glUnused) {
+		if (mUpdateRootNode.get()) {
+			mSceneGraph = mTempSceneGraph;
+			mUpdateRootNode.set(false);
+		}
 		render();
 		++mFrameCount;
 		if (mFrameCount % 50 == 0) {
@@ -212,7 +221,9 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 			mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
 
 		if (mDisplaySceneGraph) {
-        	mSceneGraph.displayGraph(mCamera, mPMatrix, mVMatrix);
+			synchronized (mChildren) {
+				mSceneGraph.displayGraph(mCamera, mPMatrix, mVMatrix);
+			}
         }
 		
 		if (pickerInfo != null) {
@@ -628,5 +639,10 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 				triangleCount += mChildren.get(i).getGeometry().getVertices().limit() / 9;
 		}
 		return triangleCount;
+	}
+
+	public void updateRootNode(IGraphNode root) {
+		mTempSceneGraph = root;
+		mUpdateRootNode.set(true);
 	}
 }
