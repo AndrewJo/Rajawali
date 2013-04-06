@@ -18,7 +18,6 @@ import rajawali.primitives.Cube;
 import rajawali.util.RajLog;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
-import android.util.Log;
 
 
 /**
@@ -43,6 +42,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	protected ISceneGraphCallbacks mListener; //The callback listener for this tree
 	protected Octree mParent; //Parent partition;
 	protected Octree[] mChildren; //Child partitions
+	protected Number3D mChildLengths; //Lengths of each side of the child nodes
 	protected boolean mSplit = false; //Have we split to child partitions
 	protected List<IGraphNodeMember> mMembers; //A list of all the member objects
 	protected List<IGraphNodeMember> mOutside; //A list of all the objects outside the root
@@ -61,13 +61,16 @@ public class Octree extends BoundingBox implements IGraphNode {
 
 	/**
 	 * The octant this node occupies in its parent. If this node
-	 * has no parent this is a meaningless number. 
+	 * has no parent this is a meaningless number. A negative
+	 * number is used to represent that there is no octant assigned.
 	 * 
 	 * The octant order follows the conventional algebraic numbering
 	 * for 3D Euclidean space. Note that they follow the axis ordering
 	 * and OpenGL uses a rotated coordinate system when compared to 
 	 * Euclidean mathematics. Thus, assuming no camera rotation or similar
 	 * effects:
+	 * @see <a href="http://en.wikipedia.org/wiki/Octant_(solid_geometry)">
+	 http://en.wikipedia.org/wiki/Octant_(solid_geometry)</a>
 	 * <pre> 
 	 *     Octant     | Screen Region
 	 * ---------------|---------------
@@ -81,7 +84,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 *       7        | Lower right, z < 0
 	 * </pre>
 	 */
-	protected int mOctant = 0;
+	protected int mOctant = -1;
 
 	/**
 	 * Default constructor. Initializes the root node with default merge/division
@@ -147,13 +150,63 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * Sets the octant this node occupies in its parent.
 	 * 
 	 * @param octant Integer octant this child occupies.
+	 * @param size Number3D containing the length for each
+	 * side this node should be. 
 	 */
-	protected void setOctant(int octant) {
+	protected void setOctant(int octant, Number3D side_lengths) {
 		mOctant = octant;
+		switch (mOctant) {
+		case 0: //+X/+Y/+Z
+			mMax.setAllFrom(mParent.mMax);
+			mTransformedMax.setAllFrom(mMax);
+			mMin.setAllFrom(Number3D.subtract(mMax, side_lengths));
+			mTransformedMin.setAllFrom(mMin);
+			break;
+		case 1: //-X/+Y/+Z
+			break;
+		case 2:
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		case 5: 
+			break;
+		case 6: //-X/-Y/-Z
+			mMin.setAllFrom(mParent.mMin);
+			mTransformedMin.setAllFrom(mMin);
+			mMax.setAllFrom(Number3D.add(mMin, side_lengths));
+			mTransformedMin.setAllFrom(mMax);
+			break;
+		case 7:
+			break;
+		default:
+			return;
+		}
+		calculatePoints();
 	}
 
+	/**
+	 * Retrieve the octant this node resides in.
+	 * 
+	 * @return integer The octant.
+	 */
 	protected int getOctant() {
 		return mOctant;
+	}
+	
+	/**
+	 * Calculates the side lengths that child nodes
+	 * of this node should have.
+	 */
+	protected void calculateChildSideLengths() {
+		//Determine the distance on each axis
+		Number3D temp = Number3D.subtract(mTransformedMax, mTransformedMin);
+		temp.multiply(0.5f); //Divide it in half
+		float overlap = 1.0f + mOverlap/100.0f;
+		temp.multiply(overlap);
+		temp.absoluteValue();
+		mChildLengths.setAllFrom(temp);
 	}
 
 	/**
@@ -300,7 +353,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			//We just add it to this node, then check if we should split
 			addToMembers(object);
 			if (mMembers.size() >= mSplitThreshold) {
-				//split();
+				split();
 			}
 		}
 	}
@@ -315,6 +368,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mChildren[i] = new Octree(this, mMergeThreshold,
 					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
 			mChildren[i].mBoundingColor = mBoundingColor - 0x0000000F;
+			mChildren[i].setOctant(i, mChildLengths);
 		}
 		for (int j = 0; j < CHILD_COUNT; ++j) {
 			int member_count = mMembers.size();
