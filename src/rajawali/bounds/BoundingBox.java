@@ -10,7 +10,6 @@ import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
-import android.util.Log;
 
 public class BoundingBox implements IBoundingVolume {
 	protected Geometry3D mGeometry;
@@ -86,7 +85,6 @@ public class BoundingBox implements IBoundingVolume {
 				mTransformedMin.z + (mTransformedMax.z - mTransformedMin.z) * .5f
 				);
 		
-		Log.v("BLAH", "Transformed min/max: " + mTransformedMin + "/" + mTransformedMax);
 		mVisualBox.render(camera, projMatrix, vMatrix, mTmpMatrix, null);
 	}
 	

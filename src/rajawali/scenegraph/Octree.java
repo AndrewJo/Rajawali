@@ -12,8 +12,11 @@ import rajawali.bounds.BoundingBox;
 import rajawali.bounds.BoundingSphere;
 import rajawali.bounds.IBoundingVolume;
 import rajawali.lights.ALight;
+import rajawali.materials.SimpleMaterial;
 import rajawali.math.Number3D;
+import rajawali.primitives.Cube;
 import rajawali.util.RajLog;
+import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.util.Log;
 
@@ -359,7 +362,10 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//Determine the direction to grow
 		Number3D min = new Number3D(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
 		Number3D max = new Number3D(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE);
-		for (IGraphNodeMember member : mOutside) {
+		ArrayList<IGraphNodeMember> items = new ArrayList<IGraphNodeMember>();
+		items.addAll(mMembers);
+		items.addAll(mOutside);
+		for (IGraphNodeMember member : items) {
 			IBoundingVolume volume = member.getTransformedBoundingVolume();
 			if (volume == null) {
 				ATransformable3D object = (ATransformable3D) member;
@@ -373,8 +379,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 			} else {
 				if (volume instanceof BoundingBox) {
 					BoundingBox bb = (BoundingBox) volume;
+					Number3D bb_min = bb.getTransformedMin();
 					Number3D bb_max = bb.getTransformedMax();
-					Number3D bb_min = bb.getTransformedMax();
 					if(bb_min.x < min.x) min.x = bb_min.x;
 					if(bb_min.y < min.y) min.y = bb_min.y;
 					if(bb_min.z < min.z) min.z = bb_min.z;
@@ -399,12 +405,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 		}
 		RajLog.d("[" + this.getClass().getName() + "] New root min/max should be: " + min + "/" + max);
 		Octree newRoot = new Octree(this, mMergeThreshold, mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
+		newRoot.setBoundingColor(0xFFFF0000);
+		newRoot.mMin.setAllFrom(min);
+		newRoot.mMax.setAllFrom(max);
+		newRoot.mTransformedMin.setAllFrom(min);
+		newRoot.mTransformedMax.setAllFrom(max);
+		newRoot.calculatePoints();
 		RajLog.d("[" + this.getClass().getName() + "] New root node: " + newRoot);
-		newRoot.mMin = min;
-		newRoot.mMax = max;
-		newRoot.mTransformedMin = min;
-		newRoot.mTransformedMax = max;
-		newRoot.transform(newRoot.mMMatrix);
 		for (IGraphNodeMember member : mOutside) {newRoot.addObject(member);}
 		for (IGraphNodeMember member : mMembers) {newRoot.addObject(member);}
 		newRoot.mParent = null;
@@ -571,7 +578,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
 		if (mMembers.size() == 0 && mOutside.size() == 0 && mParent == null) {return;}
 		RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
-		//RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + mMin + "/" + mMax);
+		RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + 
+				mTransformedMin + "/" + mTransformedMax);
 		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
 		//		+ mMembers.size() + "/" + mOutside.size());
 		Matrix.setIdentityM(mMMatrix, 0);
@@ -579,9 +587,34 @@ public class Octree extends BoundingBox implements IGraphNode {
 	}
 	
 	@Override
+	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix) {
+		if(mVisualBox == null) {
+			mVisualBox = new Cube(1);
+			mVisualBox.setMaterial(new SimpleMaterial());
+			mVisualBox.getMaterial().setUseColor(true);
+			mVisualBox.setColor(mBoundingColor);
+			mVisualBox.setDrawingMode(GLES20.GL_LINE_LOOP);
+		}
+		
+		mVisualBox.setScale(
+				Math.abs(mTransformedMax.x - mTransformedMin.x),
+				Math.abs(mTransformedMax.y - mTransformedMin.y),
+				Math.abs(mTransformedMax.z - mTransformedMin.z)
+				);
+		Matrix.setIdentityM(mTmpMatrix, 0);
+		mVisualBox.setPosition(
+				mTransformedMin.x + (mTransformedMax.x - mTransformedMin.x) * .5f, 
+				mTransformedMin.y + (mTransformedMax.y - mTransformedMin.y) * .5f, 
+				mTransformedMin.z + (mTransformedMax.z - mTransformedMin.z) * .5f
+				);
+		
+		mVisualBox.render(camera, projMatrix, vMatrix, mTmpMatrix, null);
+	}
+	
+	/*@Override
 	public String toString() {
 		return "Octree node: " + Integer.toString(this.getClass().hashCode());
-	}
+	}*/
 
 	/*
 	 * (non-Javadoc)
