@@ -85,6 +85,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * </pre>
 	 */
 	protected int mOctant = -1;
+	
+	protected static final int[] COLORS = new int[]{
+		0xFF00000F, 0xFF0000FF, 0xFF000F00, 0xFF000F0F,
+		0xFF000FF0, 0xFF000FFF, 0xFF00F000, 0xFF00F00F
+	};
 
 	/**
 	 * Default constructor. Initializes the root node with default merge/division
@@ -159,12 +164,10 @@ public class Octree extends BoundingBox implements IGraphNode {
 		switch (mOctant) {
 		case 0: //+X/+Y/+Z
 			mMax.setAllFrom(mParent.mMax);
-			mTransformedMax.setAllFrom(mMax);
 			mMin.setAllFrom(Number3D.subtract(mMax, side_lengths));
-			mTransformedMin.setAllFrom(mMin);
 			break;
-		case 1: //-X/+Y/+Z
-			mMax.x = mParent.mMax.x + side_lengths.x;
+		case 1: //-X/+Y/+Z 
+			mMax.x = mParent.mMin.x + side_lengths.x;
 			mMax.y = mParent.mMax.y;
 			mMax.z = mParent.mMax.z;
 			mMin.x = mParent.mMin.x;
@@ -196,18 +199,16 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mMin.z = mParent.mMin.z;
 			break;
 		case 5: //-X/+Y/-Z
-			mMax.x = mParent.mMax.x + side_lengths.x;
+			mMax.x = mParent.mMin.x + side_lengths.x;
 			mMax.y = mParent.mMax.y;
 			mMax.z = mParent.mMin.z + side_lengths.z;
 			mMin.x = mParent.mMin.x;
-			mMin.y = mParent.mMin.y + side_lengths.y;
+			mMin.y = mParent.mMax.y - side_lengths.y;
 			mMin.z = mParent.mMin.z;
 			break;
 		case 6: //-X/-Y/-Z
 			mMin.setAllFrom(mParent.mMin);
-			mTransformedMin.setAllFrom(mMin);
 			mMax.setAllFrom(Number3D.add(mMin, side_lengths));
-			mTransformedMin.setAllFrom(mMax);
 			break;
 		case 7: //+X/-Y/-Z
 			mMax.x = mParent.mMax.x;
@@ -220,6 +221,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 		default:
 			return;
 		}
+		mTransformedMin.setAllFrom(mMin);
+		mTransformedMax.setAllFrom(mMax);
 		calculatePoints();
 	}
 
@@ -405,7 +408,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		for (int i = 0; i < CHILD_COUNT; ++i) {
 			mChildren[i] = new Octree(this, mMergeThreshold,
 					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
-			mChildren[i].mBoundingColor = mBoundingColor - 0x0000000F;
+			mChildren[i].mBoundingColor = 0xFF00FF00; //COLORS[i];
 			mChildren[i].setOctant(i, mChildLengths);
 		}
 		for (int j = 0; j < CHILD_COUNT; ++j) {
