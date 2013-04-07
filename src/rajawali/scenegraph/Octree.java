@@ -144,6 +144,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		mChildren = new Octree[CHILD_COUNT];
 		mMembers = Collections.synchronizedList(new CopyOnWriteArrayList<IGraphNodeMember>());
 		mOutside = Collections.synchronizedList(new CopyOnWriteArrayList<IGraphNodeMember>());
+		mChildLengths = new Number3D();
 	}
 
 	/**
@@ -163,14 +164,44 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mTransformedMin.setAllFrom(mMin);
 			break;
 		case 1: //-X/+Y/+Z
+			mMax.x = mParent.mMax.x + side_lengths.x;
+			mMax.y = mParent.mMax.y;
+			mMax.z = mParent.mMax.z;
+			mMin.x = mParent.mMin.x;
+			mMin.y = mParent.mMax.y - side_lengths.y;
+			mMin.z = mParent.mMax.z - side_lengths.z;
 			break;
-		case 2:
+		case 2: //-X/-Y/+Z
+			mMax.x = mParent.mMin.x + side_lengths.x;
+			mMax.y = mParent.mMin.y + side_lengths.y;
+			mMax.z = mParent.mMax.z;
+			mMin.x = mParent.mMin.x;
+			mMin.y = mParent.mMin.y;
+			mMin.z = mParent.mMax.z - side_lengths.z;
 			break;
-		case 3:
+		case 3: //+X/-Y/+Z
+			mMax.x = mParent.mMax.x;
+			mMax.y = mParent.mMin.y + side_lengths.y;
+			mMax.z = mParent.mMax.z;
+			mMin.x = mParent.mMax.x - side_lengths.x;
+			mMin.y = mParent.mMin.y;
+			mMin.z = mParent.mMax.z - side_lengths.z;
 			break;
-		case 4:
+		case 4: //+X/+Y/-Z
+			mMax.x = mParent.mMax.x;
+			mMax.y = mParent.mMax.y;
+			mMax.z = mParent.mMin.z + side_lengths.z;
+			mMin.x = mParent.mMax.x - side_lengths.x;
+			mMin.y = mParent.mMax.y - side_lengths.y;
+			mMin.z = mParent.mMin.z;
 			break;
-		case 5: 
+		case 5: //-X/+Y/-Z
+			mMax.x = mParent.mMax.x + side_lengths.x;
+			mMax.y = mParent.mMax.y;
+			mMax.z = mParent.mMin.z + side_lengths.z;
+			mMin.x = mParent.mMin.x;
+			mMin.y = mParent.mMin.y + side_lengths.y;
+			mMin.z = mParent.mMin.z;
 			break;
 		case 6: //-X/-Y/-Z
 			mMin.setAllFrom(mParent.mMin);
@@ -178,7 +209,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mMax.setAllFrom(Number3D.add(mMin, side_lengths));
 			mTransformedMin.setAllFrom(mMax);
 			break;
-		case 7:
+		case 7: //+X/-Y/-Z
+			mMax.x = mParent.mMax.x;
+			mMax.y = mParent.mMin.y + side_lengths.y;
+			mMax.z = mParent.mMin.z + side_lengths.z;
+			mMin.x = mParent.mMax.x - side_lengths.x;
+			mMin.y = mParent.mMin.y;
+			mMin.z = mParent.mMin.z;
 			break;
 		default:
 			return;
@@ -334,6 +371,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		RajLog.d("[" + this.getClass().getName() + "] Spans: " + span_x + ", " + span_y + ", " + span_z);
 		RajLog.d("[" + this.getClass().getName() + "] Min/Max: " + mMin + "/" + mMax);*/
 		calculatePoints();
+		calculateChildSideLengths();
 	}
 
 	protected void internalAddObject(IGraphNodeMember object) {
@@ -465,6 +503,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		newRoot.mTransformedMin.setAllFrom(min);
 		newRoot.mTransformedMax.setAllFrom(max);
 		newRoot.calculatePoints();
+		newRoot.calculateChildSideLengths();
 		RajLog.d("[" + this.getClass().getName() + "] New root node: " + newRoot);
 		for (IGraphNodeMember member : mOutside) {newRoot.addObject(member);}
 		for (IGraphNodeMember member : mMembers) {newRoot.addObject(member);}
@@ -631,13 +670,19 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
 		if (mMembers.size() == 0 && mOutside.size() == 0 && mParent == null) {return;}
-		RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
+		/*RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
 		RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + 
-				mTransformedMin + "/" + mTransformedMax);
+				mTransformedMin + "/" + mTransformedMax);*/
 		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
 		//		+ mMembers.size() + "/" + mOutside.size());
 		Matrix.setIdentityM(mMMatrix, 0);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
+		if (mSplit) {
+			RajLog.d("[" + this.getClass().getName() + "] Drawing children of: " + this);
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				mChildren[i].displayGraph(camera, projMatrix, vMatrix);
+			}
+		}
 	}
 	
 	@Override
