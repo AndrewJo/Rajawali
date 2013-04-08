@@ -859,13 +859,7 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 	@Override
 	public IBoundingVolume getTransformedBoundingVolume() {
 		IBoundingVolume volume = null;
-		if (mGeometry.hasBoundingBox() && !mGeometry.hasBoundingSphere()) {
-			volume = mGeometry.getBoundingBox();
-		} else if (mGeometry.hasBoundingSphere() && !mGeometry.hasBoundingBox()) {
-			volume = mGeometry.getBoundingSphere();
-		} else {
-			volume = mGeometry.getBoundingBox();
-		}
+		volume = mGeometry.getBoundingBox();
 		calculateModelMatrix(null);
 		volume.transform(mMMatrix);
 		return volume;

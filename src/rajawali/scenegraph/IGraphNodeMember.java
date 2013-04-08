@@ -31,4 +31,11 @@ public interface IGraphNodeMember {
 	 * @return IBoundingVolume which encloses this members "geometry."
 	 */
 	public IBoundingVolume getTransformedBoundingVolume();
+	
+	/**
+	 * Retrieve the position in the scene of this member.
+	 * 
+	 * @return Number3D containing the position.
+	 */
+	public Number3D getScenePosition();
 }

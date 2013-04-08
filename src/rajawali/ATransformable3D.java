@@ -265,4 +265,12 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	public IBoundingVolume getTransformedBoundingVolume() {
 		return null;
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#getScenePosition()
+	 */
+	public Number3D getScenePosition() {
+		return mPosition;
+	}
 }
