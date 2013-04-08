@@ -216,12 +216,28 @@ public class BoundingBox implements IBoundingVolume {
 	}
 
 	public boolean contains(IBoundingVolume boundingVolume) {
-		// TODO Auto-generated method stub
-		return false;
+		if(!(boundingVolume instanceof BoundingBox)) return false;
+		BoundingBox boundingBox = (BoundingBox)boundingVolume;
+		Number3D otherMin = boundingBox.getTransformedMin();
+		Number3D otherMax = boundingBox.getTransformedMax();
+		Number3D min = mTransformedMin;
+		Number3D max = mTransformedMax;		
+		
+		return (min.x < otherMax.x) && (max.x > otherMin.x) &&
+				(min.y < otherMax.y) && (max.y > otherMin.y) &&
+				(min.z < otherMax.z) && (max.z > otherMin.z);
 	}
 
 	public boolean isContainedBy(IBoundingVolume boundingVolume) {
-		// TODO Auto-generated method stub
-		return false;
+		if(!(boundingVolume instanceof BoundingBox)) return false;
+		BoundingBox boundingBox = (BoundingBox)boundingVolume;
+		Number3D otherMin = boundingBox.getTransformedMin();
+		Number3D otherMax = boundingBox.getTransformedMax();
+		Number3D min = mTransformedMin;
+		Number3D max = mTransformedMax;		
+		
+		return (min.x > otherMax.x) && (max.x < otherMin.x) &&
+				(min.y > otherMax.y) && (max.y < otherMin.y) &&
+				(min.z > otherMax.z) && (max.z < otherMin.z);
 	}
 }

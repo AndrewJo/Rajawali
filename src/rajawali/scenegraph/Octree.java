@@ -12,11 +12,8 @@ import rajawali.bounds.BoundingBox;
 import rajawali.bounds.BoundingSphere;
 import rajawali.bounds.IBoundingVolume;
 import rajawali.lights.ALight;
-import rajawali.materials.SimpleMaterial;
 import rajawali.math.Number3D;
-import rajawali.primitives.Cube;
 import rajawali.util.RajLog;
-import android.opengl.GLES20;
 import android.opengl.Matrix;
 
 
@@ -85,11 +82,20 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * </pre>
 	 */
 	protected int mOctant = -1;
-	
+
 	protected static final int[] COLORS = new int[]{
 		0xFF00000F, 0xFF0000FF, 0xFF000F00, 0xFF000F0F,
 		0xFF000FF0, 0xFF000FFF, 0xFF00F000, 0xFF00F00F
 	};
+
+	protected static final int FITS_OCTANT_0_FLAG = 0x00000001;
+	protected static final int FITS_OCTANT_1_FLAG = 0x00000002;
+	protected static final int FITS_OCTANT_2_FLAG = 0x00000004;
+	protected static final int FITS_OCTANT_3_FLAG = 0x00000008;
+	protected static final int FITS_OCTANT_4_FLAG = 0x00000010;
+	protected static final int FITS_OCTANT_5_FLAG = 0x00000020;
+	protected static final int FITS_OCTANT_6_FLAG = 0x00000040;
+	protected static final int FITS_OCTANT_7_FLAG = 0x00000080;
 
 	/**
 	 * Default constructor. Initializes the root node with default merge/division
@@ -234,7 +240,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	protected int getOctant() {
 		return mOctant;
 	}
-	
+
 	/**
 	 * Calculates the side lengths that child nodes
 	 * of this node should have.
@@ -369,10 +375,6 @@ public class Octree extends BoundingBox implements IGraphNode {
 		mMax.z = (float) (position.z + span_z);
 		mTransformedMin = mMin;
 		mTransformedMax = mMax;
-
-		/*RajLog.d("[" + this.getClass().getName() + "] Position: " + position);
-		RajLog.d("[" + this.getClass().getName() + "] Spans: " + span_x + ", " + span_y + ", " + span_z);
-		RajLog.d("[" + this.getClass().getName() + "] Min/Max: " + mMin + "/" + mMax);*/
 		calculatePoints();
 		calculateChildSideLengths();
 	}
@@ -381,15 +383,26 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//TODO: Implement a batch process for this to save excessive splitting/merging
 		if (mSplit) {
 			//Check if the object fits in our children
-			for (int i = 0; i < CHILD_COUNT; ++i) {
-				if (mChildren[i].contains(object.getTransformedBoundingVolume())) {
-					mChildren[i].addObject(object);
-					return; //Ensures only one child gets the object 
-					//TODO: Verify this is the desired behavior
+			int fits_in_child = -1;
+			for (int j = 0; j < CHILD_COUNT; ++j) {
+				if (mChildren[j].contains(object.getTransformedBoundingVolume())) {
+					//If the member fits in this child, mark that child
+					if (fits_in_child < 0) {
+						fits_in_child = j;
+					} else {
+						//It fits in multiple children, leave it in parent
+						RajLog.d("[" + this.getClass().getName() + "] Member: " + object + "fits in multiple children. Leaving in parent.");
+						fits_in_child = -1;
+						break;
+					}
 				}
 			}
-			//It didn't fit in any of the children, so store it here
-			addToMembers(object);
+			if (fits_in_child >= 0) { //If a single child was marked, add the member to it
+				mChildren[fits_in_child].addObject(object);
+			} else {
+				//It didn't fit in any of the children, so store it here
+				addToMembers(object);
+			}
 		} else {
 			//We just add it to this node, then check if we should split
 			addToMembers(object);
@@ -404,6 +417,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 */
 	protected void split() {
 		RajLog.d("[" + this.getClass().getName() + "] Spliting node: " + this);
+		RajLog.d("[" + this.getClass().getName() + "] Parent member count before: " + mMembers.size());
 		//Populate child array
 		for (int i = 0; i < CHILD_COUNT; ++i) {
 			mChildren[i] = new Octree(this, mMergeThreshold,
@@ -411,27 +425,41 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mChildren[i].mBoundingColor = 0xFF00FF00; //COLORS[i];
 			mChildren[i].setOctant(i, mChildLengths);
 		}
-		for (int j = 0; j < CHILD_COUNT; ++j) {
-			int member_count = mMembers.size();
-			//Keep a list of members we have removed
-			ArrayList<IGraphNodeMember> removed = new ArrayList<IGraphNodeMember>();
-			for (int i = 0; i < member_count; ++i) {
-				IGraphNodeMember member = mMembers.get(i);
+		int member_count = mMembers.size();
+		//Keep a list of members we have removed
+		ArrayList<IGraphNodeMember> removed = new ArrayList<IGraphNodeMember>();
+		for (int i = 0; i < member_count; ++i) {
+			int fits_in_child = -1;
+			IGraphNodeMember member = mMembers.get(i);
+			for (int j = 0; j < CHILD_COUNT; ++j) {
 				if (mChildren[j].contains(member.getTransformedBoundingVolume())) {
-					//If the member fits in this child, move it to that child
-					mChildren[j].addObject(member);
-					removed.add(member);
+					//If the member fits in this child, mark that child
+					if (fits_in_child < 0) {
+						fits_in_child = j;
+					} else {
+						//It fits in multiple children, leave it in parent
+						RajLog.d("[" + this.getClass().getName() + "] Member: " + member + "fits in multiple children. Leaving in parent.");
+						fits_in_child = -1;
+						break;
+					}
 				}
 			}
-			//Now remove all of the members marked for removal
-			mMembers.removeAll(removed);
+			if (fits_in_child >= 0) { //If a single child was marked, add the member to it
+				mChildren[fits_in_child].addObject(member);
+				removed.add(member); //Mark the member for removal from parent
+			}
 		}
+		//Now remove all of the members marked for removal
+		mMembers.removeAll(removed);
+		for (int i = 0; i < CHILD_COUNT; ++i) {
+			RajLog.d("[" + this.getClass().getName() + "] Child " + i + " member count: " + mChildren[i].mMembers.size());
+		}
+		RajLog.d("[" + this.getClass().getName() + "] Parent member count after: " + mMembers.size());
 		mSplit = true; //Flag that we have split
 	}
 
 	/**
 	 * Merges this child nodes into their parent node. 
-	 * 
 	 */
 	protected void merge() {
 		RajLog.d("[" + this.getClass().getName() + "] Merge nodes called on node: " + this);
@@ -462,58 +490,57 @@ public class Octree extends BoundingBox implements IGraphNode {
 		items.addAll(mOutside);
 		for (IGraphNodeMember member : items) {
 			IBoundingVolume volume = member.getTransformedBoundingVolume();
+			Number3D test_against_min = null;
+			Number3D test_against_max = null;
 			if (volume == null) {
 				ATransformable3D object = (ATransformable3D) member;
-				Number3D pos = object.getPosition();
-				if(pos.x < min.x) min.x = pos.x;
-				if(pos.y < min.y) min.y = pos.y;
-				if(pos.z < min.z) min.z = pos.z;
-				if(pos.x > max.x) max.x = pos.x;
-				if(pos.y > max.y) max.y = pos.y;
-				if(pos.z > max.z) max.z = pos.z;
+				test_against_min = object.getPosition();
+				test_against_max = test_against_min;
 			} else {
 				if (volume instanceof BoundingBox) {
 					BoundingBox bb = (BoundingBox) volume;
-					Number3D bb_min = bb.getTransformedMin();
-					Number3D bb_max = bb.getTransformedMax();
-					if(bb_min.x < min.x) min.x = bb_min.x;
-					if(bb_min.y < min.y) min.y = bb_min.y;
-					if(bb_min.z < min.z) min.z = bb_min.z;
-					if(bb_max.x > max.x) max.x = bb_max.x;
-					if(bb_max.y > max.y) max.y = bb_max.y;
-					if(bb_max.z > max.z) max.z = bb_max.z;
+					test_against_min = bb.getTransformedMin();
+					test_against_max = bb.getTransformedMax();
 				} else if (volume instanceof BoundingSphere) {
 					BoundingSphere bs = (BoundingSphere) volume;
 					Number3D bs_position = bs.getPosition();
 					float radius = bs.getScaledRadius();
-					if((bs_position.x - radius) < min.x) min.x = (bs_position.x - radius);
-					if((bs_position.y - radius) < min.y) min.y = (bs_position.y - radius);
-					if((bs_position.z - radius) < min.z) min.z = (bs_position.z - radius);
-					if((bs_position.x + radius) > max.x) max.x = (bs_position.x + radius);
-					if((bs_position.y + radius) > max.y) max.y = (bs_position.y + radius);
-					if((bs_position.z + radius) > max.z) max.z = (bs_position.z + radius);
+					Number3D rad = new Number3D();
+					rad.setAll(radius, radius, radius);
+					test_against_min = Number3D.subtract(bs_position, rad);
+					test_against_max = Number3D.add(bs_position, rad);
 				} else {
 					RajLog.e("[" + this.getClass().getName() + "] Received a bounding box of unknown type.");
 					throw new IllegalArgumentException("Received a bounding box of unknown type."); 
 				}
 			}
+			if (test_against_min != null && test_against_max != null) {
+				if(test_against_min.x < min.x) min.x = test_against_min.x;
+				if(test_against_min.y < min.y) min.y = test_against_min.y;
+				if(test_against_min.z < min.z) min.z = test_against_min.z;
+				if(test_against_max.x > max.x) max.x = test_against_max.x;
+				if(test_against_max.y > max.y) max.y = test_against_max.y;
+				if(test_against_max.z > max.z) max.z = test_against_max.z;
+			}
 		}
 		RajLog.d("[" + this.getClass().getName() + "] New root min/max should be: " + min + "/" + max);
-		Octree newRoot = new Octree(this, mMergeThreshold, mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
-		newRoot.setBoundingColor(0xFFFF0000);
-		newRoot.mMin.setAllFrom(min);
-		newRoot.mMax.setAllFrom(max);
-		newRoot.mTransformedMin.setAllFrom(min);
-		newRoot.mTransformedMax.setAllFrom(max);
-		newRoot.calculatePoints();
-		newRoot.calculateChildSideLengths();
-		RajLog.d("[" + this.getClass().getName() + "] New root node: " + newRoot);
-		for (IGraphNodeMember member : mOutside) {newRoot.addObject(member);}
-		for (IGraphNodeMember member : mMembers) {newRoot.addObject(member);}
-		newRoot.mParent = null;
-		newRoot.setListener(mListener);
-		mListener.updateRootNode(newRoot);
-		destroy();
+		mMin.setAllFrom(min);
+		mMax.setAllFrom(max);
+		mTransformedMin.setAllFrom(min);
+		mTransformedMax.setAllFrom(max);
+		calculatePoints();
+		calculateChildSideLengths();
+		ArrayList<IGraphNodeMember> members = new ArrayList<IGraphNodeMember>();
+		members.addAll(mMembers);
+		members.addAll(mOutside);
+		mMembers.clear();
+		mOutside.clear();
+		if (mSplit) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				mChildren[i].setOctant(i, mChildLengths);
+			}
+		}
+		for (IGraphNodeMember member : members) {internalAddObject(member);}
 	}
 
 	/**
@@ -551,7 +578,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	/*public void addObject(IGraphNodeMember object) {
 		addObject(object, false);
 	}*/
-	
+
 	/**
 	 * Internal method for adding objects.
 	 * 
@@ -589,6 +616,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 		}
 		RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
 				+ mMembers.size() + "/" + mOutside.size());
+		if (mSplit) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				RajLog.d("[" + this.getClass().getName() + "] " + mChildren[i].toString());
+			}
+		}
 	}
 
 	/*
@@ -673,22 +705,16 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
 		if (mMembers.size() == 0 && mOutside.size() == 0 && mParent == null) {return;}
-		/*RajLog.d("[" + this.getClass().getName() + "] Drawing octree: " + this);
-		RajLog.d("[" + this.getClass().getName() + "] Octree min/max: " + 
-				mTransformedMin + "/" + mTransformedMax);*/
-		//RajLog.d("[" + this.getClass().getName() + "] Member/Outside count: "
-		//		+ mMembers.size() + "/" + mOutside.size());
 		Matrix.setIdentityM(mMMatrix, 0);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 		if (mSplit) {
-			RajLog.d("[" + this.getClass().getName() + "] Drawing children of: " + this);
 			for (int i = 0; i < CHILD_COUNT; ++i) {
 				mChildren[i].displayGraph(camera, projMatrix, vMatrix);
 			}
 		}
 	}
-	
-	@Override
+
+	/*@Override
 	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix) {
 		if(mVisualBox == null) {
 			mVisualBox = new Cube(1);
@@ -697,7 +723,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			mVisualBox.setColor(mBoundingColor);
 			mVisualBox.setDrawingMode(GLES20.GL_LINE_LOOP);
 		}
-		
+
 		mVisualBox.setScale(
 				Math.abs(mTransformedMax.x - mTransformedMin.x),
 				Math.abs(mTransformedMax.y - mTransformedMin.y),
@@ -709,14 +735,14 @@ public class Octree extends BoundingBox implements IGraphNode {
 				mTransformedMin.y + (mTransformedMax.y - mTransformedMin.y) * .5f, 
 				mTransformedMin.z + (mTransformedMax.z - mTransformedMin.z) * .5f
 				);
-		
+
 		mVisualBox.render(camera, projMatrix, vMatrix, mTmpMatrix, null);
-	}
-	
-	/*@Override
-	public String toString() {
-		return "Octree node: " + Integer.toString(this.getClass().hashCode());
 	}*/
+
+	@Override
+	public String toString() {
+		return "Node member/outside count: " + mMembers.size() + "/" + mOutside.size();
+	}
 
 	/*
 	 * (non-Javadoc)
