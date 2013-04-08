@@ -1,12 +1,13 @@
 package rajawali;
 
 import rajawali.bounds.BoundingBox;
+import rajawali.bounds.IBoundingVolume;
 import rajawali.math.Number3D;
 import rajawali.math.Plane;
 import rajawali.math.Plane.PlaneSide;
 import rajawali.primitives.Sphere;
 
-public class Frustum {
+public class Frustum implements IBoundingVolume {
 	private Number3D[] mTmp = new Number3D[8];
 	protected Sphere mVisualSphere;
 	protected float[] mTmpMatrix = new float[16];
@@ -81,5 +82,52 @@ public class Frustum {
 			if (result == PlaneSide.Back) {return false;}
 		}
 		return true;
+	}
+
+	//Bounding volume interface methods 
+	
+	public void calculateBounds(Geometry3D geometry) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void transform(float[] matrix) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public boolean intersectsWith(IBoundingVolume boundingVolume) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean contains(IBoundingVolume boundingVolume) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public boolean isContainedBy(IBoundingVolume boundingVolume) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public BaseObject3D getVisual() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void setBoundingColor(int color) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public int getBoundingColor() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }

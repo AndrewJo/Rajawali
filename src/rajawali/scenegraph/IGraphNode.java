@@ -88,6 +88,15 @@ public interface IGraphNode {
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix);
 	
 	/**
+	 * Retrieve the number of objects this node is aware of. This count should
+	 * be recursive, meaning each node should ask its children for a count and
+	 * return the sum of that count.
+	 * 
+	 * @return int containing the object count.
+	 */
+	public int getObjectCount();
+	
+	/**
 	 * Sets the current callback listener for the scene graph.
 	 * 
 	 * @param listener The new callback listener.

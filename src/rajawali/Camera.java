@@ -320,8 +320,12 @@ public class Camera extends ATransformable3D {
 		return null;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.ATransformable3D#getTransformedBoundingVolume()
+	 */
+	@Override
 	public IBoundingVolume getTransformedBoundingVolume() {
-		// TODO Auto-generated method stub
-		return null;
+		return mFrustum;
 	}
 }

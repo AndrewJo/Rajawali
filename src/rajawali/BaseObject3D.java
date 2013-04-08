@@ -856,6 +856,7 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getBoundingVolume()
 	 */
+	@Override
 	public IBoundingVolume getTransformedBoundingVolume() {
 		IBoundingVolume volume = null;
 		if (mGeometry.hasBoundingBox() && !mGeometry.hasBoundingSphere()) {

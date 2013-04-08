@@ -1,6 +1,7 @@
 package rajawali.bounds;
 
 import java.nio.FloatBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rajawali.BaseObject3D;
 import rajawali.Camera;
@@ -21,7 +22,7 @@ public class BoundingBox implements IBoundingVolume {
 	protected int mI;
 	protected Cube mVisualBox;
 	protected float[] mTmpMatrix = new float[16];
-	protected int mBoundingColor = 0xffffff00;
+	protected AtomicInteger mBoundingColor = new AtomicInteger(0xffffff00);
 	
 	public void copyPoints(Number3D[] pts){
 		
@@ -69,7 +70,7 @@ public class BoundingBox implements IBoundingVolume {
 			mVisualBox = new Cube(1);
 			mVisualBox.setMaterial(new SimpleMaterial());
 			mVisualBox.getMaterial().setUseColor(true);
-			mVisualBox.setColor(mBoundingColor);
+			mVisualBox.setColor(mBoundingColor.get());
 			mVisualBox.setDrawingMode(GLES20.GL_LINE_LOOP);
 		}
 		
@@ -99,11 +100,14 @@ public class BoundingBox implements IBoundingVolume {
 	}
 	
 	public void setBoundingColor(int color) {
-		mBoundingColor = color;
+		mBoundingColor.set(color);
+		if (mVisualBox != null) {
+			mVisualBox.setColor(color);
+		}
 	}
 	
 	public int getBoundingColor() {
-		return mBoundingColor;
+		return mBoundingColor.get();
 	}
 	
 	public void calculateBounds(Geometry3D geometry) {
@@ -215,6 +219,10 @@ public class BoundingBox implements IBoundingVolume {
 		return "BoundingBox min: " + mTransformedMin + " max: " + mTransformedMax;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.bounds.IBoundingVolume#contains(rajawali.bounds.IBoundingVolume)
+	 */
 	public boolean contains(IBoundingVolume boundingVolume) {
 		if(!(boundingVolume instanceof BoundingBox)) return false;
 		BoundingBox boundingBox = (BoundingBox)boundingVolume;
@@ -223,9 +231,9 @@ public class BoundingBox implements IBoundingVolume {
 		Number3D min = mTransformedMin;
 		Number3D max = mTransformedMax;		
 		
-		return (min.x < otherMax.x) && (max.x > otherMin.x) &&
-				(min.y < otherMax.y) && (max.y > otherMin.y) &&
-				(min.z < otherMax.z) && (max.z > otherMin.z);
+		return (max.x >= otherMax.x) && (min.x <= otherMin.x) &&
+				(max.y >= otherMax.y) && (min.y <= otherMin.y) &&
+				(max.z >= otherMax.z) && (min.z <= otherMin.z);
 	}
 
 	public boolean isContainedBy(IBoundingVolume boundingVolume) {
@@ -236,8 +244,8 @@ public class BoundingBox implements IBoundingVolume {
 		Number3D min = mTransformedMin;
 		Number3D max = mTransformedMax;		
 		
-		return (min.x > otherMax.x) && (max.x < otherMin.x) &&
-				(min.y > otherMax.y) && (max.y < otherMin.y) &&
-				(min.z > otherMax.z) && (max.z < otherMin.z);
+		return (max.x <= otherMax.x) && (min.x >= otherMin.x) &&
+				(max.y <= otherMax.y) && (min.y >= otherMin.y) &&
+				(max.z <= otherMax.z) && (min.z >= otherMin.z);
 	}
 }

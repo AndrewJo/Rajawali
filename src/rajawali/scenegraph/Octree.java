@@ -84,18 +84,9 @@ public class Octree extends BoundingBox implements IGraphNode {
 	protected int mOctant = -1;
 
 	protected static final int[] COLORS = new int[]{
-		0xFF00000F, 0xFF0000FF, 0xFF000F00, 0xFF000F0F,
-		0xFF000FF0, 0xFF000FFF, 0xFF00F000, 0xFF00F00F
+		0xFF8A2BE2, 0xFF0000FF, 0xFFD2691E, 0xFF008000,
+		0xFFD2B000, 0xFF00FF00, 0xFFFF00FF, 0xFF40E0D0
 	};
-
-	protected static final int FITS_OCTANT_0_FLAG = 0x00000001;
-	protected static final int FITS_OCTANT_1_FLAG = 0x00000002;
-	protected static final int FITS_OCTANT_2_FLAG = 0x00000004;
-	protected static final int FITS_OCTANT_3_FLAG = 0x00000008;
-	protected static final int FITS_OCTANT_4_FLAG = 0x00000010;
-	protected static final int FITS_OCTANT_5_FLAG = 0x00000020;
-	protected static final int FITS_OCTANT_6_FLAG = 0x00000040;
-	protected static final int FITS_OCTANT_7_FLAG = 0x00000080;
 
 	/**
 	 * Default constructor. Initializes the root node with default merge/division
@@ -307,6 +298,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @param object IGraphNodeMember to be added.
 	 */
 	protected void addToMembers(IGraphNodeMember object) {
+		object.getTransformedBoundingVolume().setBoundingColor(mBoundingColor.get());
 		mMembers.add(object);
 		object.setGraphNode(this);
 	}
@@ -420,9 +412,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 		RajLog.d("[" + this.getClass().getName() + "] Parent member count before: " + mMembers.size());
 		//Populate child array
 		for (int i = 0; i < CHILD_COUNT; ++i) {
+			if (mChildren[i] == null) {
 			mChildren[i] = new Octree(this, mMergeThreshold,
 					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
-			mChildren[i].mBoundingColor = 0xFF00FF00; //COLORS[i];
+			}
+			mChildren[i].mBoundingColor.set(COLORS[i]);
 			mChildren[i].setOctant(i, mChildLengths);
 		}
 		int member_count = mMembers.size();
@@ -438,13 +432,14 @@ public class Octree extends BoundingBox implements IGraphNode {
 						fits_in_child = j;
 					} else {
 						//It fits in multiple children, leave it in parent
-						RajLog.d("[" + this.getClass().getName() + "] Member: " + member + "fits in multiple children. Leaving in parent.");
+						RajLog.d("[" + this.getClass().getName() + "] Member: " + member + " fits in multiple children. Leaving in parent.");
 						fits_in_child = -1;
 						break;
 					}
 				}
 			}
 			if (fits_in_child >= 0) { //If a single child was marked, add the member to it
+				RajLog.d("[" + this.getClass().getName() + "] Adding Member: " + member + "to octant: " + fits_in_child);
 				mChildren[fits_in_child].addObject(member);
 				removed.add(member); //Mark the member for removal from parent
 			}
@@ -481,14 +476,22 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * Grows the tree.
 	 */
 	protected void grow() {
-		RajLog.d("[" + this.getClass().getName() + "] Growing tree");
-		//Determine the direction to grow
+		RajLog.d("[" + this.getClass().getName() + "] Growing tree: " + this);
 		Number3D min = new Number3D(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
 		Number3D max = new Number3D(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE);
-		ArrayList<IGraphNodeMember> items = new ArrayList<IGraphNodeMember>();
-		items.addAll(mMembers);
-		items.addAll(mOutside);
-		for (IGraphNodeMember member : items) {
+		//Get a full list of all the members, including members in the children
+		ArrayList<IGraphNodeMember> members = new ArrayList<IGraphNodeMember>();
+		members.addAll(mMembers);
+		members.addAll(mOutside);
+		clear();
+		if (mSplit) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				members.addAll(mChildren[i].mMembers);
+				members.addAll(mChildren[i].mOutside); //TODO: This should NEVER be necessary
+				mChildren[i].clear();
+			}
+		}
+		for (IGraphNodeMember member : members) {
 			IBoundingVolume volume = member.getTransformedBoundingVolume();
 			Number3D test_against_min = null;
 			Number3D test_against_max = null;
@@ -523,18 +526,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 				if(test_against_max.z > max.z) max.z = test_against_max.z;
 			}
 		}
-		RajLog.d("[" + this.getClass().getName() + "] New root min/max should be: " + min + "/" + max);
+		//RajLog.d("[" + this.getClass().getName() + "] New root min/max should be: " + min + "/" + max);
 		mMin.setAllFrom(min);
 		mMax.setAllFrom(max);
 		mTransformedMin.setAllFrom(min);
 		mTransformedMax.setAllFrom(max);
 		calculatePoints();
 		calculateChildSideLengths();
-		ArrayList<IGraphNodeMember> members = new ArrayList<IGraphNodeMember>();
-		members.addAll(mMembers);
-		members.addAll(mOutside);
-		mMembers.clear();
-		mOutside.clear();
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
 				mChildren[i].setOctant(i, mChildLengths);
@@ -591,7 +589,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//TODO: Handle recursive add posibility
 		if (mParent == null) {
 			//We are the root node
-			mBoundingColor = 0xFFFF0000;
+			mBoundingColor.set(0xFFFF0000);
 			if (mMembers.size() == 0) {
 				//Set bounds based the incoming objects bounding box
 				setBounds(object); 
@@ -651,7 +649,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#updateObject(rajawali.ATransformable3D)
 	 */
-	public  void updateObject(IGraphNodeMember object) {
+	public void updateObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + " in octree.");
 		//TODO: Implement
 	}
@@ -686,8 +684,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#clear()
 	 */
 	public void clear() {
-		// TODO Auto-generated method stub
-
+		mMembers.clear();
+		mOutside.clear();
 	}
 
 	/*
@@ -713,31 +711,20 @@ public class Octree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-
-	/*@Override
-	public void drawBoundingVolume(Camera camera, float[] projMatrix, float[] vMatrix, float[] mMatrix) {
-		if(mVisualBox == null) {
-			mVisualBox = new Cube(1);
-			mVisualBox.setMaterial(new SimpleMaterial());
-			mVisualBox.getMaterial().setUseColor(true);
-			mVisualBox.setColor(mBoundingColor);
-			mVisualBox.setDrawingMode(GLES20.GL_LINE_LOOP);
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#getObjectCount()
+	 */
+	public int getObjectCount() {
+		int count = mMembers.size() + mOutside.size();
+		if (mSplit) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				count += mChildren[i].getObjectCount();
+			}
 		}
-
-		mVisualBox.setScale(
-				Math.abs(mTransformedMax.x - mTransformedMin.x),
-				Math.abs(mTransformedMax.y - mTransformedMin.y),
-				Math.abs(mTransformedMax.z - mTransformedMin.z)
-				);
-		Matrix.setIdentityM(mTmpMatrix, 0);
-		mVisualBox.setPosition(
-				mTransformedMin.x + (mTransformedMax.x - mTransformedMin.x) * .5f, 
-				mTransformedMin.y + (mTransformedMax.y - mTransformedMin.y) * .5f, 
-				mTransformedMin.z + (mTransformedMax.z - mTransformedMin.z) * .5f
-				);
-
-		mVisualBox.render(camera, projMatrix, vMatrix, mTmpMatrix, null);
-	}*/
+		return count;
+	}
 
 	@Override
 	public String toString() {

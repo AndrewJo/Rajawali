@@ -1,5 +1,6 @@
 package rajawali;
 
+import rajawali.bounds.IBoundingVolume;
 import rajawali.math.AngleAxis;
 import rajawali.math.Number3D;
 import rajawali.math.Number3D.Axis;
@@ -255,5 +256,13 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 			return;
 		}
 		setLookAt(lookAt.x,  lookAt.y, lookAt.z);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#getTransformedBoundingVolume()
+	 */
+	public IBoundingVolume getTransformedBoundingVolume() {
+		return null;
 	}
 }
