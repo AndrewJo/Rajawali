@@ -260,6 +260,22 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 
 	/*
 	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#setGraphNode(rajawali.scenegraph.IGraphNode)
+	 */
+	public void setGraphNode(IGraphNode node) {
+		mGraphNode = node;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#getGraphNode()
+	 */
+	public IGraphNode getGraphNode() {
+		return mGraphNode;
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getTransformedBoundingVolume()
 	 */
 	public IBoundingVolume getTransformedBoundingVolume() {

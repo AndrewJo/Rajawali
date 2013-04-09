@@ -5,7 +5,6 @@ import rajawali.math.MathUtil;
 import rajawali.math.Number3D;
 import rajawali.math.Number3D.Axis;
 import rajawali.math.Quaternion;
-import rajawali.scenegraph.IGraphNode;
 import android.opengl.Matrix;
 
 public class Camera extends ATransformable3D {
@@ -308,16 +307,6 @@ public class Camera extends ATransformable3D {
 
 	public void setFogEnabled(boolean fogEnabled) {
 		this.mFogEnabled = fogEnabled;
-	}
-
-	public void setGraphNode(IGraphNode node) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public IGraphNode getGraphNode() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	/*

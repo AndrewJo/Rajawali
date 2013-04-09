@@ -15,7 +15,6 @@ import rajawali.materials.ColorPickerMaterial;
 import rajawali.materials.TextureInfo;
 import rajawali.materials.TextureManager.TextureType;
 import rajawali.math.Number3D;
-import rajawali.scenegraph.IGraphNode;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
 import rajawali.visitors.INode;
@@ -832,24 +831,6 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 		for (int i = 0, j = mChildren.size(); i < j; i++)
 			mChildren.get(i).destroy();
 		mChildren.clear();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNodeMember#setGraphNode(rajawali.scenegraph.IGraphNode)
-	 */
-	public void setGraphNode(IGraphNode node) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNodeMember#getGraphNode()
-	 */
-	public IGraphNode getGraphNode() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	/*

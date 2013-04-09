@@ -1,9 +1,7 @@
 package rajawali.lights;
 
 import rajawali.ATransformable3D;
-import rajawali.bounds.IBoundingVolume;
 import rajawali.math.Number3D;
-import rajawali.scenegraph.IGraphNode;
 
 public abstract class ALight extends ATransformable3D {
 	public static final int DIRECTIONAL_LIGHT = 0;
@@ -74,20 +72,5 @@ public abstract class ALight extends ATransformable3D {
 		mPositionArray[1] = mPosition.y;
 		mPositionArray[2] = mPosition.z;
 		return mPositionArray;
-	}
-	
-	public void setGraphNode(IGraphNode node) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public IGraphNode getGraphNode() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public IBoundingVolume getTransformedBoundingVolume() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

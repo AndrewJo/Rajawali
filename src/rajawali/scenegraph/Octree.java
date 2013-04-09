@@ -13,6 +13,7 @@ import rajawali.bounds.IBoundingVolume;
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
 import android.opengl.Matrix;
+import android.util.Log;
 
 
 /**
@@ -295,9 +296,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @param object IGraphNodeMember to be added.
 	 */
 	protected void addToMembers(IGraphNodeMember object) {
+		RajLog.d("[" + this.getClass().getName() + "] Adding object: " + object + " to members list in: " + this); 
 		object.getTransformedBoundingVolume().setBoundingColor(mBoundingColor.get());
-		mMembers.add(object);
 		object.setGraphNode(this);
+		mMembers.add(object);
+		Log.i("Rajawali", "Graph node should be: " + this + " and is: " + object.getGraphNode());
 	}
 
 	/**
@@ -417,7 +420,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		for (int i = 0; i < CHILD_COUNT; ++i) {
 			if (mChildren[i] == null) {
 				mChildren[i] = new Octree(this, mMergeThreshold,
-					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
+						mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
 			}
 			mChildren[i].mBoundingColor.set(COLORS[i]);
 			mChildren[i].setOctant(i, mChildLengths);
@@ -562,12 +565,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 	public void addObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Adding object: " + object + " to octree."); 
 		//TODO: Handle recursive add posibility
-		
+
 		if (mParent == null) {
 			//We are the root node
 			mBoundingColor.set(0xFFFF0000);
 			if (mMembers.size() == 0) {
 				//Set bounds based the incoming objects bounding box
+				Log.i("Rajawali", "Creating root node.");
 				setBounds(object); 
 				addToMembers(object);
 			} else {
@@ -597,23 +601,31 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#removeObject(rajawali.ATransformable3D)
 	 */
 	public void removeObject(IGraphNodeMember object) {
-		RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " to octree.");
+		RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " from octree.");
 		//Handle recursive remove possibility
 		//Retrieve the container object
 		IGraphNode container = object.getGraphNode();
-		if (container == this) {
-			//If this is the container, process the removal
-			//Remove the object from the members
-			mMembers.remove(object);
-			if (canMerge() && mParent != null) {
-				//If we can merge, do it (if we are the root node, we can't)
-				merge();
-			}
-			shrink(); //Try to shrink the tree
+		Log.i("Rajawali", "Container: " + container);
+		if (container == null) {
+			RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " from outside members.");
+			mOutside.remove(object);
 		} else {
-			//Defer the removal to the container
-			container.removeObject(object);
+			if (container == this) {
+				//If this is the container, process the removal
+				//Remove the object from the members
+				object.setGraphNode(null);
+				mMembers.remove(object);
+				/*if (canMerge() && mParent != null) {
+					//If we can merge, do it (if we are the root node, we can't)
+					merge();
+				}
+				shrink(); //Try to shrink the tree*/
+			} else {
+				//Defer the removal to the container
+				container.removeObject(object);
+			}
 		}
+		RajLog.d("[" + this.getClass().getName() + "] Post removal: " + this);
 	}
 
 	/*
@@ -682,7 +694,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#getObjectCount()
