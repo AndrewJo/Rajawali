@@ -41,7 +41,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	protected List<IGraphNodeMember> mMembers; //A list of all the member objects
 	protected List<IGraphNodeMember> mOutside; //A list of all the objects outside the root
 
-	protected int mOverlap = 10; //Partition overlap
+	protected int mOverlap = 0; //Partition overlap
 	protected int mGrowThreshold = 5; //Threshold at which to grow the graph
 	protected int mShrinkThreshold = 2; //Threshold at which to shrink the graph
 	protected int mSplitThreshold = 5; //Threshold at which to split the node
@@ -68,14 +68,14 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * <pre> 
 	 *     Octant     | Screen Region
 	 * ---------------|---------------
-	 *       0        | Upper right, z > 0
-	 *       1        | Upper left, z > 0
-	 *       2        | Lower left, z > 0
-	 *       3        | Lower right, z > 0
-	 *       4        | Upper right, z < 0
-	 *       5        | Upper left, z < 0
-	 *       6        | Lower left, z < 0
-	 *       7        | Lower right, z < 0
+	 *       0        | +X/+Y/+Z
+	 *       1        | -X/+Y/+Z 
+	 *       2        | -X/-Y/+Z
+	 *       3        | +X/-Y/+Z
+	 *       4        | +X/+Y/-Z
+	 *       5        | -X/+Y/-Z
+	 *       6        | -X/-Y/-Z
+	 *       7        | +X/-Y/-Z
 	 * </pre>
 	 */
 	protected int mOctant = -1;
@@ -219,6 +219,11 @@ public class Octree extends BoundingBox implements IGraphNode {
 		mTransformedMax.setAllFrom(mMax);
 		calculatePoints();
 		calculateChildSideLengths();
+		if (mSplit) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				mChildren[i].setOctant(i, mChildLengths);
+			}
+		}
 	}
 
 	/**
@@ -471,8 +476,6 @@ public class Octree extends BoundingBox implements IGraphNode {
 					mChildren[i] = null;
 				}
 				mSplit = false;
-			} else {
-				RajLog.d("[" + this.getClass().getName() + "] Nothing to merge, ignoring call.");
 			}
 		}
 	}
@@ -539,13 +542,24 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * Shrinks the tree.
 	 */
 	protected void shrink() {
-		RajLog.d("[" + this.getClass().getName() + "] Shrinking tree");
-		if (mParent != null) { //Pass the shrink call up the tree
-			mParent.shrink();
-		} else {
-			if (mOutside.size() <= mShrinkThreshold) {
-				//TODO: Check logic and finish
+		RajLog.d("[" + this.getClass().getName() + "] Checking if tree should be shrunk.");
+		int maxCount = 0;
+		int index_max = -1;
+		for (int i = 0; i < CHILD_COUNT; ++i) {
+			if (mChildren[i].getObjectCount() > maxCount) {
+				maxCount = mChildren[i].getObjectCount();
+				index_max = i;
 			}
+		}
+		if (index_max >= 0) {
+			for (int i = 0; i < CHILD_COUNT; ++i) {
+				if (mChildren[i].getObjectCount() == maxCount) {
+					return;
+				}
+			}
+			if 
+			RajLog.d("[" + this.getClass().getName() + "] Shrinking tree.");
+			
 		}
 	}
 
@@ -625,13 +639,13 @@ public class Octree extends BoundingBox implements IGraphNode {
 					Log.i("Rajawali", "We can merge!");
 					merge();
 				}
-				//shrink(); //Try to shrink the tree
 			} else {
 				//Defer the removal to the container
 				container.removeObject(object);
 			}
 		}
 		RajLog.d("[" + this.getClass().getName() + "] Post removal: " + this);
+		if (mParent == null && mSplit) shrink(); //Try to shrink the tree
 	}
 
 	/*
