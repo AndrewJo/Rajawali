@@ -416,7 +416,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		//Populate child array
 		for (int i = 0; i < CHILD_COUNT; ++i) {
 			if (mChildren[i] == null) {
-			mChildren[i] = new Octree(this, mMergeThreshold,
+				mChildren[i] = new Octree(this, mMergeThreshold,
 					mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
 			}
 			mChildren[i].mBoundingColor.set(COLORS[i]);
@@ -562,6 +562,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 	public void addObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Adding object: " + object + " to octree."); 
 		//TODO: Handle recursive add posibility
+		
 		if (mParent == null) {
 			//We are the root node
 			mBoundingColor.set(0xFFFF0000);

@@ -236,6 +236,10 @@ public class BoundingBox implements IBoundingVolume {
 				(max.z >= otherMax.z) && (min.z <= otherMin.z);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.bounds.IBoundingVolume#isContainedBy(rajawali.bounds.IBoundingVolume)
+	 */
 	public boolean isContainedBy(IBoundingVolume boundingVolume) {
 		if(!(boundingVolume instanceof BoundingBox)) return false;
 		BoundingBox boundingBox = (BoundingBox)boundingVolume;
