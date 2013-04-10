@@ -551,9 +551,12 @@ public class Octree extends BoundingBox implements IGraphNode {
 				index_max = i;
 			}
 		}
+		Log.i("Rajawali", "Max index: " + index_max);
 		if (index_max >= 0) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
-				if (mChildren[i].getObjectCount() == maxCount) {
+				if (i == index_max) {
+					continue;
+				} else if (mChildren[i].getObjectCount() == maxCount) {
 					return;
 				}
 			}
