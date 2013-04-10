@@ -557,7 +557,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 					return;
 				}
 			}
-			if 
+			//if ()
 			RajLog.d("[" + this.getClass().getName() + "] Shrinking tree.");
 			
 		}
