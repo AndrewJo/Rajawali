@@ -431,6 +431,16 @@ public class Octree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
+	
+	protected void shrinkAddObject(IGraphNodeMember object) {
+		if (contains(object.getTransformedBoundingVolume())) {
+			internalAddObject(object);
+		} else {
+			mOutside.add(object);
+			object.setGraphNode(null);
+			object.getTransformedBoundingVolume().setBoundingColor(IBoundingVolume.DEFAULT_COLOR);
+		}
+	}
 
 	/**
 	 * Splits this node into {@link CHILD_COUNT} child nodes.
@@ -585,15 +595,18 @@ public class Octree extends BoundingBox implements IGraphNode {
 			if (maxCount <= mShrinkThreshold) {
 				RajLog.d("[" + this.getClass().getName() + "] Shrinking tree.");
 				ArrayList<IGraphNodeMember> members = getAllMembersRecursively(true);
+				int members_count = members.size();
 				setBounds(index_max);
 				if (mSplit) {
-					for (int i = 0; i < CHILD_COUNT; ++i) {
+					for (int i = 0; i < CHILD_COUNT; ++i) { //TODO: This is not always necessary
 						mChildren[i].destroy();
 						mChildren[i] = null;
 					}
 					mSplit = false;
 				}
-				for (IGraphNodeMember member : members) {internalAddObject(member);}
+				for (int i = 0; i < members_count; ++i) {
+					shrinkAddObject(members.get(i));
+				}
 			}
 		}
 	}
