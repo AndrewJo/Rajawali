@@ -321,7 +321,6 @@ public class Octree extends BoundingBox implements IGraphNode {
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
 				members.addAll(mChildren[i].mMembers);
-				members.addAll(mChildren[i].mOutside); //TODO: This should NEVER be necessary
 				if (shouldClear) mChildren[i].clear();
 			}
 		}
@@ -376,7 +375,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 		calculatePoints();
 		calculateChildSideLengths();
 	}
-	
+
 	/**
 	 * Sets the bounding volume of this node to that of the specified
 	 * child. This should only be called for a root node during a shrink
@@ -431,7 +430,7 @@ public class Octree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	protected void shrinkAddObject(IGraphNodeMember object) {
 		if (contains(object.getTransformedBoundingVolume())) {
 			internalAddObject(object);
@@ -583,7 +582,6 @@ public class Octree extends BoundingBox implements IGraphNode {
 				index_max = i;
 			}
 		}
-		Log.i("Rajawali", "Max index: " + index_max + " with count: " + maxCount);
 		if (index_max >= 0) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
 				if (i == index_max) {
@@ -598,7 +596,8 @@ public class Octree extends BoundingBox implements IGraphNode {
 				int members_count = members.size();
 				setBounds(index_max);
 				if (mSplit) {
-					for (int i = 0; i < CHILD_COUNT; ++i) { //TODO: This is not always necessary
+					for (int i = 0; i < CHILD_COUNT; ++i) { 
+						//TODO: This is not always necessary depending on the object count
 						mChildren[i].destroy();
 						mChildren[i] = null;
 					}
@@ -696,8 +695,16 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#updateObject(rajawali.ATransformable3D)
 	 */
 	public void updateObject(IGraphNodeMember object) {
-		//RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + " in octree.");
-		//TODO: Implement
+		RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + 
+				"[" + object.getClass().getName() + "] in octree.");
+		if (mParent == null) {
+			//We are the root node
+			if (getObjectCount() == 1) { //If there is only one object, we should just follow it
+				setBounds(object);			
+			}
+		} else {
+			//We are a branch or leaf node
+		}
 	}
 
 	/*
