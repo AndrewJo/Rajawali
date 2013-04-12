@@ -223,7 +223,7 @@ public class BoundingBox implements IBoundingVolume {
 	 * (non-Javadoc)
 	 * @see rajawali.bounds.IBoundingVolume#contains(rajawali.bounds.IBoundingVolume)
 	 */
-	public boolean contains(IBoundingVolume boundingVolume) {
+	/*public boolean contains(IBoundingVolume boundingVolume) {
 		if(!(boundingVolume instanceof BoundingBox)) return false;
 		BoundingBox boundingBox = (BoundingBox)boundingVolume;
 		Number3D otherMin = boundingBox.getTransformedMin();
@@ -240,7 +240,7 @@ public class BoundingBox implements IBoundingVolume {
 	 * (non-Javadoc)
 	 * @see rajawali.bounds.IBoundingVolume#isContainedBy(rajawali.bounds.IBoundingVolume)
 	 */
-	public boolean isContainedBy(IBoundingVolume boundingVolume) {
+	/*public boolean isContainedBy(IBoundingVolume boundingVolume) {
 		if(!(boundingVolume instanceof BoundingBox)) return false;
 		BoundingBox boundingBox = (BoundingBox)boundingVolume;
 		Number3D otherMin = boundingBox.getTransformedMin();
@@ -251,5 +251,5 @@ public class BoundingBox implements IBoundingVolume {
 		return (max.x <= otherMax.x) && (min.x >= otherMin.x) &&
 				(max.y <= otherMax.y) && (min.y >= otherMin.y) &&
 				(max.z <= otherMax.z) && (min.z >= otherMin.z);
-	}
+	}*/
 }

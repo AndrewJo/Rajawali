@@ -718,10 +718,10 @@ public class Octree extends BoundingBox implements IGraphNode {
 					Log.i("Update", "Object was originally inside graph with a container.");
 					if (container.contains(object.getTransformedBoundingVolume())) {
 						Log.i("Update", "Object is now inside graph...");
-						mOutside.remove(object);
 						internalAddObject(object);
 					} else {
-						Log.i("Update", "Object is still outside graph...");
+						Log.i("Update", "Object is now outside graph...");
+						
 					}
 				}
 			}
@@ -813,5 +813,39 @@ public class Octree extends BoundingBox implements IGraphNode {
 	 */
 	public void setListener(ISceneGraphCallbacks listener) {
 		mListener = listener;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.bounds.IBoundingVolume#contains(rajawali.bounds.IBoundingVolume)
+	 */
+	public boolean contains(IBoundingVolume boundingVolume) {
+		if(!(boundingVolume instanceof BoundingBox)) return false;
+		BoundingBox boundingBox = (BoundingBox)boundingVolume;
+		Number3D otherMin = boundingBox.getTransformedMin();
+		Number3D otherMax = boundingBox.getTransformedMax();
+		Number3D min = mTransformedMin;
+		Number3D max = mTransformedMax;		
+		
+		return (max.x >= otherMax.x) && (min.x <= otherMin.x) &&
+				(max.y >= otherMax.y) && (min.y <= otherMin.y) &&
+				(max.z >= otherMax.z) && (min.z <= otherMin.z);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.bounds.IBoundingVolume#isContainedBy(rajawali.bounds.IBoundingVolume)
+	 */
+	public boolean isContainedBy(IBoundingVolume boundingVolume) {
+		if(!(boundingVolume instanceof BoundingBox)) return false;
+		BoundingBox boundingBox = (BoundingBox)boundingVolume;
+		Number3D otherMin = boundingBox.getTransformedMin();
+		Number3D otherMax = boundingBox.getTransformedMax();
+		Number3D min = mTransformedMin;
+		Number3D max = mTransformedMax;		
+		
+		return (max.x <= otherMax.x) && (min.x >= otherMin.x) &&
+				(max.y <= otherMax.y) && (min.y >= otherMin.y) &&
+				(max.z <= otherMax.z) && (min.z >= otherMin.z);
 	}
 }

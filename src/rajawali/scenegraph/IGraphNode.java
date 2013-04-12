@@ -102,4 +102,20 @@ public interface IGraphNode {
 	 * @param listener The new callback listener.
 	 */
 	public void setListener(ISceneGraphCallbacks listener);
+	
+	/**
+	 * Does this volume fully contain the input volume.
+	 * 
+	 * @param boundingVolume Volume to check containment of.
+	 * @return boolean result of containment test.
+	 */
+	public boolean contains(IBoundingVolume boundingVolume);
+	
+	/**
+	 * Is this volume fully contained by the input volume.
+	 * 
+	 * @param boundingVolume Volume to check containment by.
+	 * @return boolean result of containment test.
+	 */
+	public boolean isContainedBy(IBoundingVolume boundingVolume);
 }

@@ -129,7 +129,7 @@ public class BoundingSphere implements IBoundingVolume {
 		return mDist < mMinDist * mMinDist;
 	}
 
-	public boolean contains(IBoundingVolume boundingVolume) {
+	/*public boolean contains(IBoundingVolume boundingVolume) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -137,5 +137,5 @@ public class BoundingSphere implements IBoundingVolume {
 	public boolean isContainedBy(IBoundingVolume boundingVolume) {
 		// TODO Auto-generated method stub
 		return false;
-	}
+	}*/
 }
