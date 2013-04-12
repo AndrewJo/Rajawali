@@ -700,7 +700,30 @@ public class Octree extends BoundingBox implements IGraphNode {
 		if (mParent == null) {
 			//We are the root node
 			if (getObjectCount() == 1) { //If there is only one object, we should just follow it
+				Log.i("Update", "Following single object...");
 				setBounds(object);			
+			} else {
+				//There is more than just the one object.
+				IGraphNode container = object.getGraphNode();
+				if (container == null) {
+					Log.i("Update", "Object was originally outside graph with no container.");
+					if (contains(object.getTransformedBoundingVolume())) {
+						Log.i("Update", "Object is now inside graph...");
+						mOutside.remove(object);
+						internalAddObject(object);
+					} else {
+						Log.i("Update", "Object is still outside graph...");
+					}
+				} else {
+					Log.i("Update", "Object was originally inside graph with a container.");
+					if (container.contains(object.getTransformedBoundingVolume())) {
+						Log.i("Update", "Object is now inside graph...");
+						mOutside.remove(object);
+						internalAddObject(object);
+					} else {
+						Log.i("Update", "Object is still outside graph...");
+					}
+				}
 			}
 		} else {
 			//We are a branch or leaf node

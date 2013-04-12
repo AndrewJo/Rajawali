@@ -219,7 +219,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 
 		mCamera.updateFrustum(mPMatrix,mVMatrix); //update frustum plane
 
-		for (int i = 0, j = mChildren.size(); i < j; i++)
+		for (int i = 0; i < mChildren.size(); i++)
 			mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
 
 		if (mDisplaySceneGraph) {
@@ -299,7 +299,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 	}
 
 	private void reloadChildren() {
-		for (int i = 0, j = mChildren.size(); i < j; i++)
+		for (int i = 0; i < mChildren.size(); i++)
 			mChildren.get(i).reload();
 	}
 
@@ -317,7 +317,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 
 	protected void destroyScene() {
 		mSceneInitialized = false;
-		for (int i = 0, j = mChildren.size(); i < j; i++)
+		for (int i = 0; i < mChildren.size(); i++)
 			mChildren.get(i).destroy();
 		mChildren.clear();
 		for (int i = 0, j = mPlugins.size(); i < j; i++)
@@ -567,7 +567,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 
 	public void accept(INodeVisitor visitor) {
 		visitor.apply(this);
-		for (int i = 0, j = mChildren.size(); i < j; i++)
+		for (int i = 0; i < mChildren.size(); i++)
 			mChildren.get(i).accept(visitor);
 	}	
 
@@ -654,7 +654,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 
 	public int getNumTriangles() {
 		int triangleCount = 0;
-		for (int i=0; i < mChildren.size(); ++i) {
+		for (int i = 0; i < mChildren.size(); i++) {
 			if (mChildren.get(i).getGeometry() != null && mChildren.get(i).getGeometry().getVertices() != null && mChildren.get(i).isVisible())
 				triangleCount += mChildren.get(i).getGeometry().getVertices().limit() / 9;
 		}

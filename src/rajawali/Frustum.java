@@ -6,7 +6,6 @@ import rajawali.math.Plane;
 import rajawali.math.Plane.PlaneSide;
 import rajawali.primitives.Sphere;
 import android.opengl.Matrix;
-import android.util.Log;
 
 public class Frustum {
 	private Number3D[] mTmp = new Number3D[8];
@@ -43,7 +42,6 @@ public class Frustum {
 		for(int i = 0; i < 8; i++) {
 			planePoints[i].setAllFrom(mClipSpacePlanePoints[i]);
 			planePoints[i].project(inverseProjectionView);   
-			Log.v("Rajawali", "Point " + i + ": " + planePoints[i].toString());
 		}
 
 		planes[0].set(planePoints[1], planePoints[0], planePoints[2]);
@@ -103,13 +101,13 @@ public class Frustum {
 		min.x = planePoints[5].x;
 		min.y = planePoints[5].y;
 		max.setAllFrom(planePoints[7]);
-		Log.i("Rajawali", "Min/Max: " + min + "/" + max);
+		//Log.i("Rajawali", "Min/Max: " + min + "/" + max);
 		Matrix.setIdentityM(mTmpMatrix, 0);
 		mBoundingBox.setMin(min);
 		mBoundingBox.setMax(max);
 		mBoundingBox.calculatePoints();
 		mBoundingBox.transform(mTmpMatrix);
-		Log.i("Rajawali", "Camera bounds: " + mBoundingBox);
+		//Log.i("Rajawali", "Camera bounds: " + mBoundingBox);
 	}
 	
 	/**

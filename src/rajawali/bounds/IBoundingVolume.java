@@ -28,6 +28,7 @@ public interface IBoundingVolume {
 	 * @return boolean result of containment test.
 	 */
 	public boolean isContainedBy(IBoundingVolume boundingVolume);
+	
 	public BaseObject3D getVisual();
 	public void setBoundingColor(int color);
 	public int getBoundingColor();
