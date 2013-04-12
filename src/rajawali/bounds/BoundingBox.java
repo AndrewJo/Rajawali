@@ -135,7 +135,7 @@ public class BoundingBox implements IBoundingVolume {
 		calculatePoints();
 	}
 	
-	protected void calculatePoints() {
+	public void calculatePoints() {
 		// -- bottom plane
 		// -- -x, -y, -z
 		mPoints[0].setAll(mMin.x, mMin.y, mMin.z);

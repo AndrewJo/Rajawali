@@ -107,7 +107,7 @@ public class Frustum {
 		Matrix.setIdentityM(mTmpMatrix, 0);
 		mBoundingBox.setMin(min);
 		mBoundingBox.setMax(max);
-		//mBoundingBox.calculatePoints();
+		mBoundingBox.calculatePoints();
 		mBoundingBox.transform(mTmpMatrix);
 		Log.i("Rajawali", "Camera bounds: " + mBoundingBox);
 	}
