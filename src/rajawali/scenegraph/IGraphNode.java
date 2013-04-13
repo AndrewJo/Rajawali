@@ -97,13 +97,6 @@ public interface IGraphNode {
 	public int getObjectCount();
 	
 	/**
-	 * Sets the current callback listener for the scene graph.
-	 * 
-	 * @param listener The new callback listener.
-	 */
-	public void setListener(ISceneGraphCallbacks listener);
-	
-	/**
 	 * Does this volume fully contain the input volume.
 	 * 
 	 * @param boundingVolume Volume to check containment of.

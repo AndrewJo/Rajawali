@@ -22,7 +22,6 @@ import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import rajawali.renderer.plugins.IRendererPlugin;
 import rajawali.scenegraph.IGraphNode;
-import rajawali.scenegraph.ISceneGraphCallbacks;
 import rajawali.util.FPSUpdateListener;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
@@ -38,11 +37,10 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.Matrix;
 import android.service.wallpaper.WallpaperService;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 
-public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGraphCallbacks {
+public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	protected final int GL_COVERAGE_BUFFER_BIT_NV = 0x8000;
 
 	protected Context mContext;
@@ -659,10 +657,5 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode, ISceneGr
 				triangleCount += mChildren.get(i).getGeometry().getVertices().limit() / 9;
 		}
 		return triangleCount;
-	}
-
-	public void updateRootNode(IGraphNode root) {
-		mTempSceneGraph = root;
-		mUpdateRootNode.set(true);
 	}
 }
