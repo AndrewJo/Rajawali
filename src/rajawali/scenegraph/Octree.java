@@ -12,7 +12,6 @@ import rajawali.bounds.IBoundingVolume;
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
 import android.opengl.Matrix;
-import android.util.Log;
 
 
 /**
@@ -31,10 +30,6 @@ import android.util.Log;
 public class Octree extends A_nAABBTree {
 
 	private static final int CHILD_COUNT = 8; //The number of child nodes used
-
-	protected Octree mParent; //Parent partition;
-	protected Octree[] mChildren; //Child partitions
-	protected Number3D mChildLengths; //Lengths of each side of the child nodes
 
 	/**
 	 * The octant this node occupies in its parent. If this node
@@ -140,62 +135,64 @@ public class Octree extends A_nAABBTree {
 	 */
 	protected void setOctant(int octant, Number3D side_lengths) {
 		mOctant = octant;
+		Number3D min = mParent.getMin();
+		Number3D max = mParent.getMax();
 		switch (mOctant) {
 		case 0: //+X/+Y/+Z
-			mMax.setAllFrom(mParent.mMax);
+			mMax.setAllFrom(mParent.getMax());
 			mMin.setAllFrom(Number3D.subtract(mMax, side_lengths));
 			break;
 		case 1: //-X/+Y/+Z 
-			mMax.x = mParent.mMin.x + side_lengths.x;
-			mMax.y = mParent.mMax.y;
-			mMax.z = mParent.mMax.z;
-			mMin.x = mParent.mMin.x;
-			mMin.y = mParent.mMax.y - side_lengths.y;
-			mMin.z = mParent.mMax.z - side_lengths.z;
+			mMax.x = min.x + side_lengths.x;
+			mMax.y = max.y;
+			mMax.z = max.z;
+			mMin.x = min.x;
+			mMin.y = max.y - side_lengths.y;
+			mMin.z = max.z - side_lengths.z;
 			break;
 		case 2: //-X/-Y/+Z
-			mMax.x = mParent.mMin.x + side_lengths.x;
-			mMax.y = mParent.mMin.y + side_lengths.y;
-			mMax.z = mParent.mMax.z;
-			mMin.x = mParent.mMin.x;
-			mMin.y = mParent.mMin.y;
-			mMin.z = mParent.mMax.z - side_lengths.z;
+			mMax.x = min.x + side_lengths.x;
+			mMax.y = min.y + side_lengths.y;
+			mMax.z = max.z;
+			mMin.x = min.x;
+			mMin.y = min.y;
+			mMin.z = max.z - side_lengths.z;
 			break;
 		case 3: //+X/-Y/+Z
-			mMax.x = mParent.mMax.x;
-			mMax.y = mParent.mMin.y + side_lengths.y;
-			mMax.z = mParent.mMax.z;
-			mMin.x = mParent.mMax.x - side_lengths.x;
-			mMin.y = mParent.mMin.y;
-			mMin.z = mParent.mMax.z - side_lengths.z;
+			mMax.x = max.x;
+			mMax.y = min.y + side_lengths.y;
+			mMax.z = max.z;
+			mMin.x = max.x - side_lengths.x;
+			mMin.y = min.y;
+			mMin.z = max.z - side_lengths.z;
 			break;
 		case 4: //+X/+Y/-Z
-			mMax.x = mParent.mMax.x;
-			mMax.y = mParent.mMax.y;
-			mMax.z = mParent.mMin.z + side_lengths.z;
-			mMin.x = mParent.mMax.x - side_lengths.x;
-			mMin.y = mParent.mMax.y - side_lengths.y;
-			mMin.z = mParent.mMin.z;
+			mMax.x = max.x;
+			mMax.y = max.y;
+			mMax.z = min.z + side_lengths.z;
+			mMin.x = max.x - side_lengths.x;
+			mMin.y = max.y - side_lengths.y;
+			mMin.z = min.z;
 			break;
 		case 5: //-X/+Y/-Z
-			mMax.x = mParent.mMin.x + side_lengths.x;
-			mMax.y = mParent.mMax.y;
-			mMax.z = mParent.mMin.z + side_lengths.z;
-			mMin.x = mParent.mMin.x;
-			mMin.y = mParent.mMax.y - side_lengths.y;
-			mMin.z = mParent.mMin.z;
+			mMax.x = min.x + side_lengths.x;
+			mMax.y = max.y;
+			mMax.z = min.z + side_lengths.z;
+			mMin.x = min.x;
+			mMin.y = max.y - side_lengths.y;
+			mMin.z = min.z;
 			break;
 		case 6: //-X/-Y/-Z
-			mMin.setAllFrom(mParent.mMin);
+			mMin.setAllFrom(min);
 			mMax.setAllFrom(Number3D.add(mMin, side_lengths));
 			break;
 		case 7: //+X/-Y/-Z
-			mMax.x = mParent.mMax.x;
-			mMax.y = mParent.mMin.y + side_lengths.y;
-			mMax.z = mParent.mMin.z + side_lengths.z;
-			mMin.x = mParent.mMax.x - side_lengths.x;
-			mMin.y = mParent.mMin.y;
-			mMin.z = mParent.mMin.z;
+			mMax.x = max.x;
+			mMax.y = min.y + side_lengths.y;
+			mMax.z = min.z + side_lengths.z;
+			mMin.x = max.x - side_lengths.x;
+			mMin.y = min.y;
+			mMin.z = min.z;
 			break;
 		default:
 			return;
@@ -206,7 +203,7 @@ public class Octree extends A_nAABBTree {
 		calculateChildSideLengths();
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
-				mChildren[i].setOctant(i, mChildLengths);
+				((Octree) mChildren[i]).setOctant(i, mChildLengths);
 			}
 		}
 	}
@@ -220,71 +217,21 @@ public class Octree extends A_nAABBTree {
 		return mOctant;
 	}
 
-	/**
-	 * Calculates the side lengths that child nodes
-	 * of this node should have.
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.A_nAABBTree#destroy()
 	 */
-	protected void calculateChildSideLengths() {
-		//Determine the distance on each axis
-		Number3D temp = Number3D.subtract(mTransformedMax, mTransformedMin);
-		temp.multiply(0.5f); //Divide it in half
-		float overlap = 1.0f + mOverlap/100.0f;
-		temp.multiply(overlap);
-		temp.absoluteValue();
-		mChildLengths.setAllFrom(temp);
-	}
-
-	/**
-	 * Performs the necessary process to destroy this node
-	 */
+	@Override
 	protected void destroy() {
 		RajLog.d("[" + this.getClass().getName() + "] Destroying octree node: " + this);
 		//TODO: Implement
 	}
 
-	/**
-	 * Sets the threshold for growing the tree.
-	 * 
-	 * @param threshold int containing the new threshold.
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.A_nAABBTree#addToMembers(rajawali.scenegraph.IGraphNodeMember)
 	 */
-	public void setGrowThreshold(int threshold) {
-		mGrowThreshold = threshold;
-	}
-
-	/**
-	 * Sets the threshold for shrinking the tree.
-	 * 
-	 * @param threshold int containing the new threshold.
-	 */
-	public void setShrinkThreshold(int threshold) {
-		mShrinkThreshold = threshold;
-	}
-
-	/**
-	 * Sets the threshold for merging this node.
-	 * 
-	 * @param threshold int containing the new threshold.
-	 */
-	public void setMergeThreshold(int threshold) {
-		mMergeThreshold = threshold;
-	}
-
-	/**
-	 * Sets the threshold for splitting this node.
-	 * 
-	 * @param threshold int containing the new threshold.
-	 */
-	public void setSplitThreshold(int threshold) {
-		mSplitThreshold = threshold;
-	}
-
-	/**
-	 * Adds the specified object to this node's internal member
-	 * list and sets the node attribute on the member to this
-	 * node.
-	 * 
-	 * @param object IGraphNodeMember to be added.
-	 */
+	@Override
 	protected void addToMembers(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Adding object: " + object + " to members list in: " + this); 
 		object.getTransformedBoundingVolume().setBoundingColor(mBoundingColor.get());
@@ -292,12 +239,11 @@ public class Octree extends A_nAABBTree {
 		mMembers.add(object);
 	}
 	
-	/**
-	 * Removes the specified object from this node's internal member
-	 * list and sets the node attribute on the member to null.
-	 * 
-	 * @param object IGraphNodeMember to be removed.
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.A_nAABBTree#removeFromMembers(rajawali.scenegraph.IGraphNodeMember)
 	 */
+	@Override
 	protected void removeFromMembers(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " from members list in: " + this);
 		object.getTransformedBoundingVolume().setBoundingColor(IBoundingVolume.DEFAULT_COLOR);
@@ -305,24 +251,22 @@ public class Octree extends A_nAABBTree {
 		mMembers.remove(object);
 	}
 	
-	/**
-	 * Adds the specified object to the scenegraph's outside member
-	 * list and sets the node attribute on the member to null.
-	 * 
-	 * @param object IGraphNodeMember to be added.
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.A_nAABBTree#addToOutside(rajawali.scenegraph.IGraphNodeMember)
 	 */
+	@Override
 	protected void addToOutside(IGraphNodeMember object) {
 		mOutside.add(object);
 		object.setGraphNode(null);
 		object.getTransformedBoundingVolume().setBoundingColor(IBoundingVolume.DEFAULT_COLOR);
 	}
 
-	/**
-	 * Returns a list of all members of this node and any decendent nodes.
-	 * 
-	 * @param shouldClear boolean indicating if the search should clear the lists.
-	 * @return ArrayList of IGraphNodeMembers.
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.A_nAABBTree#getAllMembersRecursively(boolean)
 	 */
+	@Override
 	protected ArrayList<IGraphNodeMember> getAllMembersRecursively(boolean shouldClear) {
 		ArrayList<IGraphNodeMember> members = new ArrayList<IGraphNodeMember>();
 		members.addAll(mMembers);
@@ -335,72 +279,6 @@ public class Octree extends A_nAABBTree {
 			}
 		}
 		return members;
-	}
-
-	/**
-	 * Sets the bounding volume of this node. This should only be called
-	 * for a root node with no children. This sets the initial root node
-	 * to have a volume ~8x the member, centered on the member.
-	 * 
-	 * @param object IGraphNodeMember the member we will be basing
-	 * our bounds on. 
-	 */
-	protected void setBounds(IGraphNodeMember member) {
-		RajLog.d("[" + this.getClass().getName() + "] Setting bounds based on member: " + member);
-		if (mMembers.size() != 0 && mParent != null) {return;}
-		IBoundingVolume volume = member.getTransformedBoundingVolume();
-		BoundingBox bcube = null;
-		BoundingSphere bsphere = null;
-		Number3D position = member.getScenePosition();
-		double span_y = 0;
-		double span_x = 0;
-		double span_z = 0;
-		if (volume == null) {
-			span_x = 5.0;
-			span_y = 5.0;
-			span_z = 5.0;
-		} else {
-			if (volume instanceof BoundingBox) {
-				bcube = (BoundingBox) volume;
-				Number3D min = bcube.getTransformedMin();
-				Number3D max = bcube.getTransformedMax();
-				span_x = (max.x - min.x);
-				span_y = (max.y - min.y);
-				span_z = (max.z - min.z);
-			} else if (volume instanceof BoundingSphere) {
-				bsphere = (BoundingSphere) volume;
-				span_x = 2.0*bsphere.getScaledRadius();
-				span_y = span_x;
-				span_z = span_x;
-			}
-		}
-		mMin.x = (float) (position.x - span_x);
-		mMin.y = (float) (position.y - span_y);
-		mMin.z = (float) (position.z - span_z);
-		mMax.x = (float) (position.x + span_x);
-		mMax.y = (float) (position.y + span_y);
-		mMax.z = (float) (position.z + span_z);
-		mTransformedMin.setAllFrom(mMin);
-		mTransformedMax.setAllFrom(mMax);
-		calculatePoints();
-		calculateChildSideLengths();
-	}
-
-	/**
-	 * Sets the bounding volume of this node to that of the specified
-	 * child. This should only be called for a root node during a shrink
-	 * operation. 
-	 * 
-	 * @param child int Which octant to match.
-	 */
-	protected void setBounds(int child) {
-		Octree new_bounds = mChildren[child];
-		mMin.setAllFrom(new_bounds.mMin);
-		mMax.setAllFrom(new_bounds.mMax);
-		mTransformedMin.setAllFrom(mMin);
-		mTransformedMax.setAllFrom(mMax);
-		calculatePoints();
-		calculateChildSideLengths();
 	}
 
 	/*
@@ -466,8 +344,8 @@ public class Octree extends A_nAABBTree {
 				mChildren[i] = new Octree(this, mMergeThreshold,
 						mSplitThreshold, mShrinkThreshold, mGrowThreshold, mOverlap);
 			}
-			mChildren[i].mBoundingColor.set(COLORS[i]);
-			mChildren[i].setOctant(i, mChildLengths);
+			mChildren[i].setBoundingColor(COLORS[i]);
+			((Octree) mChildren[i]).setOctant(i, mChildLengths);
 		}
 		int member_count = mMembers.size();
 		//Keep a list of members we have removed
@@ -579,7 +457,7 @@ public class Octree extends A_nAABBTree {
 		calculateChildSideLengths();
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
-				mChildren[i].setOctant(i, mChildLengths);
+				((Octree) mChildren[i]).setOctant(i, mChildLengths);
 			}
 		}
 		for (int i = 0; i < members_count; ++i) {
@@ -715,58 +593,7 @@ public class Octree extends A_nAABBTree {
 	 */
 	public void updateObject(IGraphNodeMember object) {
 		/*RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + 
-				"[" + object.getClass().getName() + "] in octree.");
-		if (mParent == null) {
-			//We are the root node
-			if (getObjectCount() == 1) { //If there is only one object, we should just follow it
-				Log.i("Update", "Following single object...");
-				setBounds(object);			
-			} else {
-				//There is more than just the one object.
-				IGraphNode container = object.getGraphNode();
-				if (container == null) {
-					Log.i("Update", "Object was originally outside graph with no container.");
-					if (contains(object.getTransformedBoundingVolume())) {
-						Log.i("Update", "Object is now inside graph...");
-						mOutside.remove(object);
-						internalAddObject(object);
-					} else {
-						Log.i("Update", "Object is still outside graph...");
-					}
-				} else {
-					Log.i("Update", "Object was originally inside graph with a container.");
-					if (container.contains(object.getTransformedBoundingVolume())) {
-						Log.i("Update", "Object is now inside graph...");
-						internalAddObject(object);
-					} else {
-						Log.i("Update", "Object is now outside graph...");
-						container.removeObject(object);
-						addToOutside(object);
-						if (mOutside.size() >= mGrowThreshold) {
-							grow();
-						}
-					}
-				}
-			}
-		} else {
-			//We are a branch or leaf node
-		}*/
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNode#addChildrenRecursively(boolean)
-	 */
-	public void addChildrenRecursively(boolean recursive) {
-		mRecursiveAdd = recursive;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNode#removeChildrenRecursively(boolean)
-	 */
-	public void removeChildrenRecursively(boolean recursive) {
-		mRecursiveRemove = recursive;
+				"[" + object.getClass().getName() + "] in octree.");*/
 	}
 
 	/*
@@ -775,16 +602,6 @@ public class Octree extends A_nAABBTree {
 	 */
 	public void rebuild() {
 		// TODO Auto-generated method stub
-
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNode#clear()
-	 */
-	public void clear() {
-		mMembers.clear();
-		mOutside.clear();
 	}
 
 	/*
@@ -801,7 +618,8 @@ public class Octree extends A_nAABBTree {
 	 * @see rajawali.scenegraph.IGraphNode#displayGraph(boolean)
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
-		if (mMembers.size() == 0 && mOutside.size() == 0 && mParent == null) {return;}
+		if (mMembers.size() == 0 && mParent == null) {return;}
+		if (mOutside != null && mOutside.size() == 0) {return;}
 		Matrix.setIdentityM(mMMatrix, 0);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 		if (mSplit) {
@@ -827,7 +645,13 @@ public class Octree extends A_nAABBTree {
 
 	@Override
 	public String toString() {
-		return "Octant " + mOctant + " member/outside count: " + mMembers.size() + "/" + mOutside.size();
+		String str = "Octant " + mOctant + " member/outside count: " + mMembers.size() + "/";
+		if (mOutside != null) {
+			str = str + mOutside.size();
+		} else {
+			str = str + "NULL";
+		}
+		return str;
 	}
 
 
