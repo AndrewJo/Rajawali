@@ -18,7 +18,21 @@ import rajawali.util.RajLog;
  * are left to determine child count and any count specific behavior. This implementation
  * in general uses the methodology described in the tutorial listed below by Paramike. 
  * 
- * By default, this tree will recursively add the children of added objects and
+ * Implementations of this could be Ternary trees (3), Octree (8), Icoseptree (27), etc.
+ * The tree will try to nest objects as deeply as possible while trying to maintain an minimal
+ * tree structure based on the thresholds set. It is up to the user to determine what thresholds
+ * make sense and are optimal for your specific needs as there are tradeoffs associated with
+ * them all. The default implementation attempts to strike a reasonable balance.
+ * 
+ * This tree design also utilizes an option for overlap between child partitions. This is useful
+ * for mimicking some of the behavior of a more complex tree without incurring the complexity. If
+ * you specify an overlap percentage, it is more likely that an object near a boundary of the 
+ * partitions will fit in one or the other and be able to be nested deeper rather than staying in
+ * the parent partition. Note however that in cases where the object is small enough to still be
+ * fully contained by both (or more) children, it is added to the parent. This is where a more
+ * complex tree would excel, but only in the case over very large object counts.
+ * 
+ * By default, this tree will NOT recursively add the children of added objects and NOT
  * recursively remove the children of removed objects.
  * 
  * @author Jared Woolston (jwoolston@tenkiv.com)
@@ -42,8 +56,8 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	protected int mSplitThreshold = 5; //Threshold at which to split the node
 	protected int mMergeThreshold = 2; //Threshold at which to merge the node
 
-	protected boolean mRecursiveAdd = true; //Default to recursive add
-	protected boolean mRecursiveRemove = true; //Default to recursive remove.
+	protected boolean mRecursiveAdd = false; //Default to NOT recursive add
+	protected boolean mRecursiveRemove = false; //Default to NOT recursive remove.
 
 	protected float[] mMMatrix = new float[16]; //A model matrix to use for drawing the bounds of this node.
 	protected Number3D mPosition; //This node's center point in 3D space.
@@ -60,6 +74,45 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 */
 	protected A_nAABBTree() {
 		super();
+	}
+	
+	/**
+	 * Constructor to setup root node with specified merge/split and
+	 * grow/shrink behavior.
+	 * 
+	 * @param maxMembers int containing the divide threshold count. When more 
+	 * members than this are added, a partition will divide into 8 children.
+	 * @param minMembers int containing the merge threshold count. When fewer
+	 * members than this exist, a partition will recursively merge to its ancestors.
+	 * @param overlap int containing the percentage overlap between two adjacent
+	 * partitions. This allows objects to be nested deeper in the tree when they
+	 * would ordinarily span a boundry.
+	 */
+	public A_nAABBTree(int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
+		this(null, mergeThreshold, splitThreshold, shrinkThreshold, growThreshold, overlap);
+	}
+
+	/**
+	 * Constructor to setup a child node with specified merge/split and 
+	 * grow/shrink behavior.
+	 * 
+	 * @param parent A_nAABBTree which is the parent of this partition.
+	 * @param maxMembers int containing the divide threshold count. When more 
+	 * members than this are added, a partition will divide into 8 children.
+	 * @param minMembers int containing the merge threshold count. When fewer
+	 * members than this exist, a partition will recursively merge to its ancestors.
+	 * @param overlap int containing the percentage overlap between two adjacent
+	 * partitions. This allows objects to be nested deeper in the tree when they
+	 * would ordinarily span a boundry.
+	 */
+	public A_nAABBTree(A_nAABBTree parent, int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
+		mParent = parent;
+		mMergeThreshold = mergeThreshold;
+		mSplitThreshold = splitThreshold;
+		mShrinkThreshold = shrinkThreshold;
+		mGrowThreshold = growThreshold;
+		mOverlap = overlap;
+		init();
 	}
 	
 	/**

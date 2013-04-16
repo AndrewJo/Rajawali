@@ -1,6 +1,5 @@
 package rajawali.scenegraph;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -67,7 +66,7 @@ public class Octree extends A_nAABBTree {
 	 * would ordinarily span a boundry.
 	 */
 	public Octree(int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
-		this(null, mergeThreshold, splitThreshold, shrinkThreshold, growThreshold, overlap);
+		super(mergeThreshold, splitThreshold, shrinkThreshold, growThreshold, overlap);
 	}
 
 	/**
@@ -85,13 +84,6 @@ public class Octree extends A_nAABBTree {
 	 */
 	public Octree(Octree parent, int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
 		super();
-		mParent = parent;
-		mMergeThreshold = mergeThreshold;
-		mSplitThreshold = splitThreshold;
-		mShrinkThreshold = shrinkThreshold;
-		mGrowThreshold = growThreshold;
-		mOverlap = overlap;
-		init();
 	}
 
 	/*
