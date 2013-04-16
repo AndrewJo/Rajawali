@@ -41,18 +41,18 @@ import rajawali.util.RajLog;
 public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 
 	protected int CHILD_COUNT = 0; //The number of child nodes used
-	
+
 	protected A_nAABBTree mParent; //Parent partition;
 	protected A_nAABBTree[] mChildren; //Child partitions
 	protected Number3D mChildLengths; //Lengths of each side of the child nodes
-	
+
 	protected boolean mSplit = false; //Have we split to child partitions
 	protected List<IGraphNodeMember> mMembers; //A list of all the member objects
 	protected List<IGraphNodeMember> mOutside; //A list of all the objects outside the root
 
 	protected int mOverlap = 0; //Partition overlap
 	protected int mGrowThreshold = 5; //Threshold at which to grow the graph
-	protected int mShrinkThreshold = 2; //Threshold at which to shrink the graph
+	protected int mShrinkThreshold = 4; //Threshold at which to shrink the graph
 	protected int mSplitThreshold = 5; //Threshold at which to split the node
 	protected int mMergeThreshold = 2; //Threshold at which to merge the node
 
@@ -61,21 +61,21 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 
 	protected float[] mMMatrix = new float[16]; //A model matrix to use for drawing the bounds of this node.
 	protected Number3D mPosition; //This node's center point in 3D space.
-	
+
 	/**
 	 * The region (e.g. octant) this node occupies in its parent. If this node
 	 * has no parent this is a meaningless number. A negative
 	 * number is used to represent that there is no region assigned.
 	 */
 	protected int mChildRegion = -1;
-	
+
 	/**
 	 * Default constructor
 	 */
 	protected A_nAABBTree() {
 		super();
 	}
-	
+
 	/**
 	 * Constructor to setup root node with specified merge/split and
 	 * grow/shrink behavior.
@@ -114,12 +114,12 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		mOverlap = overlap;
 		init();
 	}
-	
+
 	/**
 	 * Performs the necessary process to destroy this node
 	 */
 	protected abstract void destroy();
-	
+
 	/**
 	 * Calculates the side lengths that child nodes
 	 * of this node should have.
@@ -133,7 +133,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		temp.absoluteValue();
 		mChildLengths.setAllFrom(temp);
 	}
-	
+
 	/**
 	 * Sets the bounding volume of this node. This should only be called
 	 * for a root node with no children. This sets the initial root node
@@ -182,7 +182,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		calculatePoints();
 		calculateChildSideLengths();
 	}
-	
+
 	/**
 	 * Sets the bounding volume of this node to that of the specified
 	 * child. This should only be called for a root node during a shrink
@@ -199,7 +199,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		calculatePoints();
 		calculateChildSideLengths();
 	}
-	
+
 	/**
 	 * Sets the region this node occupies in its parent.
 	 * Subclasses should be sure to call the super implementation
@@ -220,7 +220,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/**
 	 * Retrieve the octant this node resides in.
 	 * 
@@ -229,7 +229,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	protected int getChildRegion() {
 		return mChildRegion;
 	}
-	
+
 	/**
 	 * Sets the threshold for growing the tree.
 	 * 
@@ -265,7 +265,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	public void setSplitThreshold(int threshold) {
 		mSplitThreshold = threshold;
 	}
-	
+
 	/**
 	 * Adds the specified object to this node's internal member
 	 * list and sets the node attribute on the member to this
@@ -279,7 +279,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		object.setGraphNode(this);
 		mMembers.add(object);
 	}
-	
+
 	/**
 	 * Removes the specified object from this node's internal member
 	 * list and sets the node attribute on the member to null.
@@ -292,7 +292,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		object.setGraphNode(null);
 		mMembers.remove(object);
 	}
-	
+
 	/**
 	 * Adds the specified object to the scenegraph's outside member
 	 * list and sets the node attribute on the member to null.
@@ -304,7 +304,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		object.setGraphNode(null);
 		object.getTransformedBoundingVolume().setBoundingColor(IBoundingVolume.DEFAULT_COLOR);
 	}
-	
+
 	/**
 	 * Returns a list of all members of this node and any decendent nodes.
 	 * 
@@ -314,7 +314,9 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	protected ArrayList<IGraphNodeMember> getAllMembersRecursively(boolean shouldClear) {
 		ArrayList<IGraphNodeMember> members = new ArrayList<IGraphNodeMember>();
 		members.addAll(mMembers);
-		members.addAll(mOutside);
+		if (mParent == null) {
+			members.addAll(mOutside);
+		}
 		if (shouldClear) clear();
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
@@ -324,7 +326,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		}
 		return members;
 	}
-	
+
 	/**
 	 * Internal method for adding an object to the graph. This method will determine if
 	 * it gets added to this node or moved to a child node.
@@ -362,7 +364,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/**
 	 * Adds an object back into the graph when shrinking.
 	 * 
@@ -375,7 +377,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			addToOutside(object);
 		}
 	}
-	
+
 	/**
 	 * Splits this node into child nodes. Subclasses
 	 * should be sure to call the super implementation
@@ -409,7 +411,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		mMembers.removeAll(removed);
 		mSplit = true; //Flag that we have split
 	}
-	
+
 	/**
 	 * Merges this child nodes into their parent node. 
 	 */
@@ -434,7 +436,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/**
 	 * Grows the tree.
 	 */
@@ -495,41 +497,45 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			internalAddObject(members.get(i));
 		}
 	}
-	
+
 	/**
 	 * Initializes the storage elements of the tree.
 	 */
 	protected abstract void init();
-	
+
 	/**
-	 * Shrinks the tree.
+	 * Shrinks the tree. Should only be called by root node.
 	 */
 	protected void shrink() {
+		if (mParent != null) {
+			throw new IllegalStateException("Shrink can only be called by the root node.");
+		}
 		RajLog.d("[" + this.getClass().getName() + "] Checking if tree should be shrunk.");
 		int maxCount = 0;
 		int index_max = -1;
-		for (int i = 0; i < CHILD_COUNT; ++i) {
+		for (int i = 0; i < CHILD_COUNT; ++i) { //For each child, get the object count and find the max
 			if (mChildren[i].getObjectCount() > maxCount) {
 				maxCount = mChildren[i].getObjectCount();
 				index_max = i;
 			}
 		}
 		if (index_max >= 0) {
-			for (int i = 0; i < CHILD_COUNT; ++i) {
+			for (int i = 0; i < CHILD_COUNT; ++i) { //Validate shrink
 				if (i == index_max) {
 					continue;
-				} else if (mChildren[i].getObjectCount() == maxCount) {
+				} else if (mChildren[i].getObjectCount() == maxCount) { 
+					//If there are two+ children with the max count, shrinking doesnt make sense
 					return;
 				}
 			}
-			if (maxCount <= mShrinkThreshold) {
+			if ((getObjectCount() - maxCount) <= mShrinkThreshold) {
 				RajLog.d("[" + this.getClass().getName() + "] Shrinking tree.");
 				ArrayList<IGraphNodeMember> members = getAllMembersRecursively(true);
 				int members_count = members.size();
 				setBounds(index_max);
 				if (mSplit) {
 					for (int i = 0; i < CHILD_COUNT; ++i) { 
-						//TODO: This is not always necessary depending on the object count
+						//TODO: This is not always necessary depending on the object count, a GC improvement can be made here
 						mChildren[i].destroy();
 						mChildren[i] = null;
 					}
@@ -541,7 +547,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/**
 	 * Determines if this node can be merged.
 	 * 
@@ -557,7 +563,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		}
 		return (count <= mMergeThreshold);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#clear()
@@ -568,7 +574,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			mOutside.clear();
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#addObject(rajawali.scenegraph.IGraphNodeMember)
@@ -610,7 +616,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 */
 	public void removeObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " from octree.");
-		//Handle recursive remove possibility
+		//TODO: Handle recursive add posibility
 		//Retrieve the container object
 		IGraphNode container = object.getGraphNode();
 		if (container == null) {
@@ -631,7 +637,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		}
 		if (mParent == null && mSplit) shrink(); //Try to shrink the tree
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#updateObject(rajawali.ATransformable3D)
@@ -639,8 +645,49 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	public void updateObject(IGraphNodeMember object) {
 		/*RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + 
 				"[" + object.getClass().getName() + "] in octree.");*/
+		IGraphNode container = object.getGraphNode();
+		if (container == null) {
+			container = this;
+		}
+		handleRecursiveUpdate((A_nAABBTree) container, object);
 	}
-	
+
+	protected void handleRecursiveUpdate(final A_nAABBTree container, IGraphNodeMember object) {
+		A_nAABBTree local_container = container;
+		boolean updated = false;
+		while (!updated) {
+			if (local_container.contains(object.getTransformedBoundingVolume())) {
+				int fits_in_child = -1;
+				for (int j = 0; j < CHILD_COUNT; ++j) {
+					if (mChildren[j].contains(object.getTransformedBoundingVolume())) {
+						//If the member fits in this child, mark that child
+						if (fits_in_child < 0) {
+							fits_in_child = j;
+						} else {
+							//It fits in multiple children, leave it in parent
+							fits_in_child = -1;
+							break;
+						}
+					}
+				}
+				if (fits_in_child >= 0) { //If a single child was marked
+					container.removeFromMembers(object);
+					mChildren[fits_in_child].internalAddObject(object);
+					updated = true;
+				} else {
+					updated = true;
+				}
+			} else {
+				if (container.mParent == null) {
+					container.addToOutside(object);
+					updated = true;
+				} else {
+					local_container = container.mParent;
+				}
+			}
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#addChildrenRecursively(boolean)
@@ -656,7 +703,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	public void removeChildrenRecursively(boolean recursive) {
 		mRecursiveRemove = recursive;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#cullFromBoundingVolume(rajawali.bounds.IBoundingVolume)
@@ -679,7 +726,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#getObjectCount()
@@ -696,7 +743,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		}
 		return count;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#contains(rajawali.bounds.IBoundingVolume)
@@ -730,7 +777,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 				(max.y <= otherMax.y) && (min.y >= otherMin.y) &&
 				(max.z <= otherMax.z) && (min.z >= otherMin.z);
 	}
-	
+
 	@Override
 	public String toString() {
 		String str = "A_nAABBTree: " + mChildRegion + " member/outside count: " + mMembers.size() + "/";
