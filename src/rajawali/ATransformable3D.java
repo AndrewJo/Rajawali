@@ -22,6 +22,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	protected AngleAxis mAngleAxis; 
 	
 	protected IGraphNode mGraphNode;
+	protected boolean mInsideGraph = false; //Default to being outside the graph
 	
 	public ATransformable3D() {
 		mPosition = new Number3D();
@@ -273,8 +274,9 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#setGraphNode(rajawali.scenegraph.IGraphNode)
 	 */
-	public void setGraphNode(IGraphNode node) {
+	public void setGraphNode(IGraphNode node, boolean inside) {
 		mGraphNode = node;
+		mInsideGraph = inside;
 	}
 	
 	/*
@@ -283,6 +285,14 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 */
 	public IGraphNode getGraphNode() {
 		return mGraphNode;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNodeMember#isInGraph()
+	 */
+	public boolean isInGraph() {
+		return mInsideGraph;
 	}
 	
 	/*

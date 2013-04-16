@@ -15,8 +15,9 @@ public interface IGraphNodeMember {
 	 * Sets the node that this member is contained in.
 	 * 
 	 * @param node IGraphNode this member was placed inside.
+	 * @param inside Boolean indicating if this object is inside the graph.
 	 */
-	public void setGraphNode(IGraphNode node);
+	public void setGraphNode(IGraphNode node, boolean inside);
 	
 	/**
 	 * Gets the node that this member is contained in.
@@ -24,6 +25,13 @@ public interface IGraphNodeMember {
 	 * @return IGraphNode this member was placed inside.
 	 */
 	public IGraphNode getGraphNode();
+	
+	/**
+	 * Gets the objects state in the graph.
+	 * 
+	 * @return True if the object is inside the graph.
+	 */
+	public boolean isInGraph();
 	
 	/**
 	 * Retrieve the bounding volume of this member.
