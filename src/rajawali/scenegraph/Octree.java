@@ -204,14 +204,6 @@ public class Octree extends A_nAABBTree {
 		super.split();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see rajawali.scenegraph.IGraphNode#rebuild()
-	 */
-	public void rebuild() {
-		// TODO Auto-generated method stub
-	}
-
 	@Override
 	public String toString() {
 		String str = "Octant: " + mChildRegion + " member/outside count: " + mMembers.size() + "/";

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.opengl.Matrix;
+import android.util.Log;
 
 import rajawali.ATransformable3D;
 import rajawali.Camera;
@@ -645,6 +646,11 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	public void updateObject(IGraphNodeMember object) {
 		/*RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + 
 				"[" + object.getClass().getName() + "] in octree.");*/
+		if (mParent == null && getObjectCount() == 1) { //If there is only one object, we should just follow it
+			Log.i("Update", "Following single object...");
+			setBounds(object);			
+			return;
+		}
 		IGraphNode container = object.getGraphNode();
 		if (container == null) {
 			container = this;
@@ -653,27 +659,34 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	}
 
 	protected void handleRecursiveUpdate(final A_nAABBTree container, IGraphNodeMember object) {
+		long calltime = System.currentTimeMillis();
+		int count = 0;
 		A_nAABBTree local_container = container;
 		boolean updated = false;
 		while (!updated) {
+			Log.w("Rajawal", "Loop " + count + " for call @" + calltime);
 			if (local_container.contains(object.getTransformedBoundingVolume())) {
 				int fits_in_child = -1;
-				for (int j = 0; j < CHILD_COUNT; ++j) {
-					if (mChildren[j].contains(object.getTransformedBoundingVolume())) {
-						//If the member fits in this child, mark that child
-						if (fits_in_child < 0) {
-							fits_in_child = j;
-						} else {
-							//It fits in multiple children, leave it in parent
-							fits_in_child = -1;
-							break;
+				if (mSplit) {
+					for (int j = 0; j < CHILD_COUNT; ++j) {
+						if (mChildren[j].contains(object.getTransformedBoundingVolume())) {
+							//If the member fits in this child, mark that child
+							if (fits_in_child < 0) {
+								fits_in_child = j;
+							} else {
+								//It fits in multiple children, leave it in parent
+								fits_in_child = -1;
+								break;
+							}
 						}
 					}
-				}
-				if (fits_in_child >= 0) { //If a single child was marked
-					container.removeFromMembers(object);
-					mChildren[fits_in_child].internalAddObject(object);
-					updated = true;
+					if (fits_in_child >= 0) { //If a single child was marked
+						container.removeFromMembers(object);
+						mChildren[fits_in_child].internalAddObject(object);
+						updated = true;
+					} else {
+						updated = true;
+					}
 				} else {
 					updated = true;
 				}
@@ -685,9 +698,18 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 					local_container = container.mParent;
 				}
 			}
+			++count;
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#rebuild()
+	 */
+	public void rebuild() {
+		// TODO Auto-generated method stub
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#addChildrenRecursively(boolean)
@@ -734,7 +756,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	public int getObjectCount() {
 		int count = mMembers.size();
 		if (mParent == null) {
-			mOutside.size();
+			count += mOutside.size();
 		}
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
