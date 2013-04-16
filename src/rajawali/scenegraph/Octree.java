@@ -5,6 +5,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
+import android.util.Log;
 
 
 /**
@@ -83,7 +84,7 @@ public class Octree extends A_nAABBTree {
 	 * would ordinarily span a boundry.
 	 */
 	public Octree(Octree parent, int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
-		super();
+		super(parent, mergeThreshold, splitThreshold, shrinkThreshold, growThreshold, overlap);
 	}
 
 	/*
@@ -108,6 +109,7 @@ public class Octree extends A_nAABBTree {
 	@Override
 	protected void setChildRegion(int octant, Number3D side_lengths) {
 		mChildRegion = octant;
+		Log.i("Rajawali", "mParent: " + mParent);
 		Number3D min = mParent.getMin();
 		Number3D max = mParent.getMax();
 		switch (mChildRegion) {
@@ -212,8 +214,8 @@ public class Octree extends A_nAABBTree {
 
 	@Override
 	public String toString() {
-		String str = "Octant " + mChildRegion + " member/outside count: " + mMembers.size() + "/";
-		if (mOutside != null) {
+		String str = "Octant: " + mChildRegion + " member/outside count: " + mMembers.size() + "/";
+		if (mParent == null) {
 			str = str + mOutside.size();
 		} else {
 			str = str + "NULL";

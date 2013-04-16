@@ -564,7 +564,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 */
 	public void clear() {
 		mMembers.clear();
-		if (mOutside != null) {
+		if (mParent == null) {
 			mOutside.clear();
 		}
 	}
@@ -671,8 +671,6 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#displayGraph(boolean)
 	 */
 	public void displayGraph(Camera camera, float[] projMatrix, float[] vMatrix) {
-		if (mMembers.size() == 0 && mParent == null) {return;}
-		if (mOutside != null && mOutside.size() == 0) {return;}
 		Matrix.setIdentityM(mMMatrix, 0);
 		drawBoundingVolume(camera, projMatrix, vMatrix, mMMatrix);
 		if (mSplit) {
@@ -687,7 +685,10 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * @see rajawali.scenegraph.IGraphNode#getObjectCount()
 	 */
 	public int getObjectCount() {
-		int count = mMembers.size() + mOutside.size();
+		int count = mMembers.size();
+		if (mParent == null) {
+			mOutside.size();
+		}
 		if (mSplit) {
 			for (int i = 0; i < CHILD_COUNT; ++i) {
 				count += mChildren[i].getObjectCount();
@@ -728,5 +729,16 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		return (max.x <= otherMax.x) && (min.x >= otherMin.x) &&
 				(max.y <= otherMax.y) && (min.y >= otherMin.y) &&
 				(max.z <= otherMax.z) && (min.z >= otherMin.z);
+	}
+	
+	@Override
+	public String toString() {
+		String str = "A_nAABBTree: " + mChildRegion + " member/outside count: " + mMembers.size() + "/";
+		if (mParent == null) {
+			str = str + mOutside.size();
+		} else {
+			str = str + "NULL";
+		}
+		return str;
 	}
 }
