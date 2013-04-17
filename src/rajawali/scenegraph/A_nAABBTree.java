@@ -701,8 +701,9 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 						updated = true;
 					}
 				} else {
-					//Log.i("Rajawali", "No children so we are leaving in same node.");
+					Log.i("Rajawali", "No children so we are leaving in same node.");
 					if (!object.isInGraph()) {
+						Log.i("Rajawali", "Removing from outside graph and moving to inside root.");
 						local_container.mOutside.remove(object);
 						local_container.internalAddObject(object);
 					}
