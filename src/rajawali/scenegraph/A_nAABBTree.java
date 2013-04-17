@@ -718,7 +718,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 						removeFromMembers(object);
 						addToOutside(object);
 					}
-					Log.e("Rajawali", "Node after addToOutside: " + object.getGraphNode());
+					//Log.e("Rajawali", "Node after addToOutside: " + object.getGraphNode());
 					updated = true;
 				} else {
 					Log.i("Rajawali", "Container is not root. Moving search up a level.");
