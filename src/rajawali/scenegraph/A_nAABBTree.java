@@ -703,24 +703,24 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 				} else {
 					//Log.i("Rajawali", "No children so we are leaving in same node.");
 					if (!object.isInGraph()) {
-						mOutside.remove(object);
-						internalAddObject(object);
+						local_container.mOutside.remove(object);
+						local_container.internalAddObject(object);
 					}
 					updated = true;
 				}
 			} else {
-				if (container.mParent == null) {
+				if (local_container.mParent == null) {
 					//Log.v("Rajawali", "OUTSIDE");
 					//Log.i("Rajawali", "Container is root node. Adding to outside.");
 					if (object.isInGraph()) {
-						removeFromMembers(object);
-						addToOutside(object);
+						local_container.removeFromMembers(object);
+						local_container.addToOutside(object);
 					}
 					//Log.e("Rajawali", "Node after addToOutside: " + object.getGraphNode());
 					updated = true;
 				} else {
 					Log.i("Rajawali", "Container is not root. Moving search up a level.");
-					local_container = container.mParent;
+					local_container = local_container.mParent;
 				}
 			}
 			++count;
