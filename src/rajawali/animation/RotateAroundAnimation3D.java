@@ -29,16 +29,22 @@ public class RotateAroundAnimation3D extends Animation3D {
 		
 		float cosVal = (float)Math.cos(radians) * mDistance;
 		float sinVal = (float)Math.sin(radians) * mDistance;
-		
+		float x = 0;
+		float y = 0;
+		float z = 0;
 		if(mAxis == Axis.Z) {
-			mTransformable3D.setX(mCenter.x + cosVal);
-			mTransformable3D.setY(mCenter.y + sinVal);
+			x = mCenter.x + cosVal;
+			y = mCenter.y + sinVal;
+			z = mTransformable3D.getZ();
 		} else if(mAxis == Axis.Y) {
-			mTransformable3D.setX(mCenter.x + cosVal);
-			mTransformable3D.setZ(mCenter.z + sinVal);
+			x = mCenter.x + cosVal;
+			y = mTransformable3D.getY();
+			z = mCenter.z + sinVal;
 		} else if(mAxis == Axis.X) {
-			mTransformable3D.setY(mCenter.y + cosVal);
-			mTransformable3D.setZ(mCenter.z + sinVal);
+			x = mTransformable3D.getX();
+			y = mCenter.y + cosVal;
+			z = mCenter.z + sinVal;
 		}
+		mTransformable3D.setPosition(x, y, z);
 	}
 }
