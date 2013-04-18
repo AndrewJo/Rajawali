@@ -5,7 +5,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import rajawali.math.Number3D;
 import rajawali.util.RajLog;
-import android.util.Log;
 
 
 /**
@@ -109,7 +108,6 @@ public class Octree extends A_nAABBTree {
 	@Override
 	protected void setChildRegion(int octant, Number3D side_lengths) {
 		mChildRegion = octant;
-		Log.i("Rajawali", "mParent: " + mParent);
 		Number3D min = mParent.getMin();
 		Number3D max = mParent.getMax();
 		switch (mChildRegion) {

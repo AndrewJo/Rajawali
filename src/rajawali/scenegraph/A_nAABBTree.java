@@ -17,7 +17,8 @@ import rajawali.util.RajLog;
 /**
  * Generic Axis Aligned Bounding Box based tree sorting hierarchy. Subclasses
  * are left to determine child count and any count specific behavior. This implementation
- * in general uses the methodology described in the tutorial listed below by Paramike. 
+ * in general uses the methodology described in the tutorial listed below by Paramike, with
+ * a few modifications to the behavior. 
  * 
  * Implementations of this could be Ternary trees (3), Octree (8), Icoseptree (27), etc.
  * The tree will try to nest objects as deeply as possible while trying to maintain an minimal
@@ -87,7 +88,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * members than this exist, a partition will recursively merge to its ancestors.
 	 * @param overlap int containing the percentage overlap between two adjacent
 	 * partitions. This allows objects to be nested deeper in the tree when they
-	 * would ordinarily span a boundry.
+	 * would ordinarily span a boundary.
 	 */
 	public A_nAABBTree(int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
 		this(null, mergeThreshold, splitThreshold, shrinkThreshold, growThreshold, overlap);
@@ -104,7 +105,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * members than this exist, a partition will recursively merge to its ancestors.
 	 * @param overlap int containing the percentage overlap between two adjacent
 	 * partitions. This allows objects to be nested deeper in the tree when they
-	 * would ordinarily span a boundry.
+	 * would ordinarily span a boundary.
 	 */
 	public A_nAABBTree(A_nAABBTree parent, int mergeThreshold, int splitThreshold, int shrinkThreshold, int growThreshold, int overlap) {
 		mParent = parent;
@@ -386,11 +387,9 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * to avoid unexpected behavior.
 	 */
 	protected void split() {
-		RajLog.d("[" + this.getClass().getName() + "] split() called on node: " + this);
-		int member_count = mMembers.size();
 		//Keep a list of members we have removed
 		ArrayList<IGraphNodeMember> removed = new ArrayList<IGraphNodeMember>();
-		for (int i = 0; i < member_count; ++i) {
+		for (int i = 0; i < mMembers.size(); ++i) {
 			int fits_in_child = -1;
 			IGraphNodeMember member = mMembers.get(i);
 			for (int j = 0; j < CHILD_COUNT; ++j) {
@@ -582,7 +581,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#addObject(rajawali.scenegraph.IGraphNodeMember)
 	 */
-	public void addObject(IGraphNodeMember object) {
+	public synchronized void addObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Adding object: " + object + " to octree."); 
 		//TODO: Handle recursive add posibility
 
@@ -617,7 +616,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#removeObject(rajawali.ATransformable3D)
 	 */
-	public void removeObject(IGraphNodeMember object) {
+	public synchronized void removeObject(IGraphNodeMember object) {
 		RajLog.d("[" + this.getClass().getName() + "] Removing object: " + object + " from octree.");
 		//TODO: Handle recursive add posibility
 		//Retrieve the container object
@@ -645,7 +644,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNode#updateObject(rajawali.ATransformable3D)
 	 */
-	public void updateObject(IGraphNodeMember object) {
+	public synchronized void updateObject(IGraphNodeMember object) {
 		/*RajLog.d("[" + this.getClass().getName() + "] Updating object: " + object + 
 				"[" + object.getClass().getName() + "] in octree.");*/
 		if (mParent == null && getObjectCount() == 1) { //If there is only one object, we should just follow it
@@ -657,7 +656,8 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			container = this;
 		}*/
 		handleRecursiveUpdate((A_nAABBTree) container, object);
-		Log.e("Rajawali", "Root: " + this);
+		Log.e("Rajawali", "Node: " + this);
+		Log.e("Rajawali", "Object Container: " + object.getGraphNode());
 	}
 
 	/**
@@ -669,12 +669,9 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 	 */
 	protected void handleRecursiveUpdate(final A_nAABBTree container, IGraphNodeMember object) {
 		//Log.i("Rajawali", "Handling recursive update potential.");
-		long calltime = System.currentTimeMillis();
-		int count = 0;
 		A_nAABBTree local_container = container;
 		boolean updated = false;
 		while (!updated) {
-			Log.w("Rajawali", "Loop " + count + " for call @" + calltime);
 			if (local_container.contains(object.getTransformedBoundingVolume())) {
 				Log.v("Rajawali", "INSIDE");
 				int fits_in_child = -1;
@@ -710,6 +707,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 					updated = true;
 				}
 			} else {
+				Log.v("Rajawali", "OUTSIDE");
 				if (local_container.mParent == null) {
 					//Log.v("Rajawali", "OUTSIDE");
 					//Log.i("Rajawali", "Container is root node. Adding to outside.");
@@ -720,11 +718,10 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 					//Log.e("Rajawali", "Node after addToOutside: " + object.getGraphNode());
 					updated = true;
 				} else {
-					Log.i("Rajawali", "Container is not root. Moving search up a level.");
+					Log.i("Rajawali", "Container is not root (" + local_container + "). Moving search up a level.");
 					local_container = local_container.mParent;
 				}
 			}
-			++count;
 		}
 	}
 
