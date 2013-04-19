@@ -652,9 +652,6 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			return;
 		}
 		IGraphNode container = object.getGraphNode(); //Get the container node
-		/*if (container == null) { //If it was previous not in a node, assume it is now in the parent
-			container = this;
-		}*/
 		handleRecursiveUpdate((A_nAABBTree) container, object);
 		Log.e("Rajawali", "Node: " + this);
 		Log.e("Rajawali", "Object Container: " + object.getGraphNode());

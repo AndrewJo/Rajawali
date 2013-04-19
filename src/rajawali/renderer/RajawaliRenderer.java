@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -112,8 +111,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 */
 	protected boolean mUseSceneGraph = false;
 	protected boolean mDisplaySceneGraph = false;
-	protected AtomicBoolean mUpdateRootNode = new AtomicBoolean(false);
-	protected IGraphNode mTempSceneGraph;
 	
 	public RajawaliRenderer(Context context) {
 		RajLog.i("IMPORTANT: Rajawali's coordinate system has changed. It now reflects");
@@ -146,10 +143,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	public void onDrawFrame(GL10 glUnused) {
-		if (mUpdateRootNode.get()) {
-			mSceneGraph = mTempSceneGraph;
-			mUpdateRootNode.set(false);
-		}
 		render();
 		++mFrameCount;
 		if (mFrameCount % 50 == 0) {
