@@ -1,5 +1,6 @@
 package rajawali;
 
+import rajawali.bounds.IBoundingVolume;
 import rajawali.math.MathUtil;
 import rajawali.math.Number3D;
 import rajawali.math.Number3D.Axis;
@@ -307,5 +308,14 @@ public class Camera extends ATransformable3D {
 
 	public void setFogEnabled(boolean fogEnabled) {
 		this.mFogEnabled = fogEnabled;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.ATransformable3D#getTransformedBoundingVolume()
+	 */
+	@Override
+	public IBoundingVolume getTransformedBoundingVolume() {
+		return mFrustum.getBoundingBox();
 	}
 }
