@@ -39,44 +39,44 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 		mRotationDirty = true;
 	}
 	
-	public void setPosition(Number3D position) {
+	public synchronized void setPosition(Number3D position) {
 		mPosition.setAllFrom(position);
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public void setPosition(float x, float y, float z) {
+	public synchronized void setPosition(float x, float y, float z) {
 		mPosition.setAll(x, y, z);
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public Number3D getPosition() {
+	public synchronized Number3D getPosition() {
 		return mPosition;
 	}
 	
-	public void setX(float x) {
+	public synchronized void setX(float x) {
 		mPosition.x = x;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getX() {
+	public synchronized float getX() {
 		return mPosition.x;
 	}
 
-	public void setY(float y) {
+	public synchronized void setY(float y) {
 		mPosition.y = y;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getY() {
+	public synchronized float getY() {
 		return mPosition.y;
 	}
 
-	public void setZ(float z) {
+	public synchronized void setZ(float z) {
 		mPosition.z = z;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getZ() {
+	public synchronized float getZ() {
 		return mPosition.z;
 	}
 	
@@ -85,7 +85,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	Number3D mTmpRotZ = new Number3D();
 	float[] mLookAtMatrix = new float[16];
 
-	public void setOrientation() {
+	public synchronized void setOrientation() {
 		if(!mRotationDirty && mLookAt == null) return;
 
 		mOrientation.setIdentity();
@@ -130,11 +130,11 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 		//if (mGraphNode != null) mGraphNode.updateObject(this); //TODO: This may cause problems
 	}
 
-	public void rotateAround(Number3D axis, float angle) {
+	public synchronized void rotateAround(Number3D axis, float angle) {
 		rotateAround(axis, angle, true);
 	}
 	
- 	public void rotateAround(Number3D axis, float angle, boolean append) {
+ 	public synchronized void rotateAround(Number3D axis, float angle, boolean append) {
  		if(append) {
  			mTmpOrientation.fromAngleAxis(angle, axis);
  			mOrientation.multiply(mTmpOrientation);
@@ -145,18 +145,18 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 	
-	public Quaternion getOrientation() {
+	public synchronized Quaternion getOrientation() {
 		setOrientation(); // Force mOrientation to be recalculated
 		return new Quaternion(mOrientation);
 	}
 	
-	public void setOrientation(Quaternion quat) {
+	public synchronized void setOrientation(Quaternion quat) {
 		mOrientation.setAllFrom(quat);
 		mRotationDirty = false;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 	
-	public void setRotation(float rotX, float rotY, float rotZ) {
+	public synchronized void setRotation(float rotX, float rotY, float rotZ) {
 		mRotation.x = rotX;
 		mRotation.y = rotY;
 		mRotation.z = rotZ;
@@ -164,97 +164,97 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 	
-	public void setRotX(float rotX) {
+	public synchronized void setRotX(float rotX) {
 		mRotation.x = rotX;
 		mRotationDirty = true;
 	}
 
-	public float getRotX() {
+	public synchronized float getRotX() {
 		return mRotation.x;
 	}
 
-	public void setRotY(float rotY) {
+	public synchronized void setRotY(float rotY) {
 		mRotation.y = rotY;
 		mRotationDirty = true;
 	}
 
-	public float getRotY() {
+	public synchronized float getRotY() {
 		return mRotation.y;
 	}
 
-	public void setRotZ(float rotZ) {
+	public synchronized void setRotZ(float rotZ) {
 		mRotation.z = rotZ;
 		mRotationDirty = true;
 	}
 
-	public float getRotZ() {
+	public synchronized float getRotZ() {
 		return mRotation.z;
 	}
 	
-	public Number3D getRotation() {
+	public synchronized Number3D getRotation() {
 		return mRotation;
 	}
 
-	public void setRotation(Number3D rotation) {
+	public synchronized void setRotation(Number3D rotation) {
 		mRotation.setAllFrom(rotation);
 		mRotationDirty = true;
 	}
 
-	public void setScale(float scale) {
+	public synchronized void setScale(float scale) {
 		mScale.x = scale;
 		mScale.y = scale;
 		mScale.z = scale;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public void setScale(float scaleX, float scaleY, float scaleZ) {
+	public synchronized void setScale(float scaleX, float scaleY, float scaleZ) {
 		mScale.x = scaleX;
 		mScale.y = scaleY;
 		mScale.z = scaleZ;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public void setScaleX(float scaleX) {
+	public synchronized void setScaleX(float scaleX) {
 		mScale.x = scaleX;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getScaleX() {
+	public synchronized float getScaleX() {
 		return mScale.x;
 	}
 
-	public void setScaleY(float scaleY) {
+	public synchronized void setScaleY(float scaleY) {
 		mScale.y = scaleY;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getScaleY() {
+	public synchronized float getScaleY() {
 		return mScale.y;
 	}
 
-	public void setScaleZ(float scaleZ) {
+	public synchronized void setScaleZ(float scaleZ) {
 		mScale.z = scaleZ;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public float getScaleZ() {
+	public synchronized float getScaleZ() {
 		return mScale.z;
 	}
 	
-	public Number3D getScale() {
+	public synchronized Number3D getScale() {
 		return mScale;
 	}
 
-	public void setScale(Number3D scale) {
+	public synchronized void setScale(Number3D scale) {
 		mScale = scale;
 		if (mGraphNode != null) mGraphNode.updateObject(this);
 	}
 
-	public Number3D getLookAt() {
+	public synchronized Number3D getLookAt() {
 		return mLookAt;
 	}
 	
-	public void setLookAt(float x, float y, float z) {
+	public synchronized void setLookAt(float x, float y, float z) {
 		if(mLookAt == null) mLookAt = new Number3D();
 		mLookAt.x = x;
 		mLookAt.y = y;
@@ -262,7 +262,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 		mRotationDirty = true;
 	}
 	
-	public void setLookAt(Number3D lookAt) {
+	public synchronized void setLookAt(Number3D lookAt) {
 		if(lookAt == null) {
 			mLookAt = null;
 			return;
@@ -274,7 +274,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#setGraphNode(rajawali.scenegraph.IGraphNode)
 	 */
-	public void setGraphNode(IGraphNode node, boolean inside) {
+	public synchronized void setGraphNode(IGraphNode node, boolean inside) {
 		mGraphNode = node;
 		mInsideGraph = inside;
 	}
@@ -283,7 +283,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getGraphNode()
 	 */
-	public IGraphNode getGraphNode() {
+	public synchronized IGraphNode getGraphNode() {
 		return mGraphNode;
 	}
 	
@@ -291,7 +291,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#isInGraph()
 	 */
-	public boolean isInGraph() {
+	public synchronized boolean isInGraph() {
 		return mInsideGraph;
 	}
 	
@@ -299,7 +299,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getTransformedBoundingVolume()
 	 */
-	public IBoundingVolume getTransformedBoundingVolume() {
+	public synchronized IBoundingVolume getTransformedBoundingVolume() {
 		return null;
 	}
 	
@@ -307,7 +307,7 @@ public abstract class ATransformable3D implements IGraphNodeMember {
 	 * (non-Javadoc)
 	 * @see rajawali.scenegraph.IGraphNodeMember#getScenePosition()
 	 */
-	public Number3D getScenePosition() {
+	public synchronized Number3D getScenePosition() {
 		return mPosition;
 	}
 }
