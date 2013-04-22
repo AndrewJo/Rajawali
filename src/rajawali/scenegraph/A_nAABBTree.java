@@ -653,8 +653,7 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 		}
 		IGraphNode container = object.getGraphNode(); //Get the container node
 		handleRecursiveUpdate((A_nAABBTree) container, object);
-		Log.e("Rajawali", "Node: " + this);
-		Log.e("Rajawali", "Object Container: " + object.getGraphNode());
+		Log.e("Rajawali", "Node: " + this + " Object Container: " + container);
 	}
 
 	/**
@@ -687,10 +686,10 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 					}
 					if (fits_in_child >= 0) { //If a single child was marked
 						Log.i("Rajawali", "Fits in a single child.");
-						container.removeFromMembers(object);
+						local_container.removeFromMembers(object);
 						mChildren[fits_in_child].internalAddObject(object);
 						updated = true;
-					} else {
+					} else { //TODO: WORKS
 						Log.i("Rajwali", "Fits in multiple children, leaving in place.");
 						updated = true;
 					}
@@ -704,8 +703,8 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 					updated = true;
 				}
 			} else {
-				Log.v("Rajawali", "OUTSIDE");
-				if (local_container.mParent == null) {
+				//Log.v("Rajawali", "OUTSIDE");
+				if (local_container.mParent == null) { //TODO: WORKS
 					//Log.v("Rajawali", "OUTSIDE");
 					//Log.i("Rajawali", "Container is root node. Adding to outside.");
 					if (object.isInGraph()) {
