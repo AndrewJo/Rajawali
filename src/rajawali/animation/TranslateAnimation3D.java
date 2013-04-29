@@ -49,6 +49,7 @@ public class TranslateAnimation3D extends Animation3D {
 		} else {
 			Number3D pathPoint = mSplinePath.calculatePoint((float) mInterpolatedTime);
 			mTransformable3D.setPosition(pathPoint);
+			mTransformable3D.getPosition().setAllFrom(pathPoint);
 
 			if (mOrientToPath)
 				mTransformable3D.setLookAt(mSplinePath

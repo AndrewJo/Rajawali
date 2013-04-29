@@ -15,6 +15,7 @@ import rajawali.materials.ColorPickerMaterial;
 import rajawali.materials.TextureInfo;
 import rajawali.materials.TextureManager.TextureType;
 import rajawali.math.Number3D;
+import rajawali.renderer.AFrameTask;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
 import rajawali.visitors.INode;
@@ -849,5 +850,10 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 		calculateModelMatrix(null);
 		volume.transform(mMMatrix);
 		return volume;
+	}
+	
+	@Override
+	public TYPE getFrameTaskType() {
+		return AFrameTask.TYPE.OBJECT3D;
 	}
 }

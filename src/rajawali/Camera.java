@@ -5,6 +5,7 @@ import rajawali.math.MathUtil;
 import rajawali.math.Number3D;
 import rajawali.math.Number3D.Axis;
 import rajawali.math.Quaternion;
+import rajawali.renderer.AFrameTask;
 import android.opengl.Matrix;
 
 public class Camera extends ATransformable3D {
@@ -317,5 +318,10 @@ public class Camera extends ATransformable3D {
 	@Override
 	public IBoundingVolume getTransformedBoundingVolume() {
 		return mFrustum.getBoundingBox();
+	}
+	
+	@Override
+	public TYPE getFrameTaskType() {
+		return AFrameTask.TYPE.CAMERA;
 	}
 }
