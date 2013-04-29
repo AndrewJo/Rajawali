@@ -11,7 +11,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import rajawali.BaseObject3D;
 import rajawali.Camera;
-import rajawali.animation.TimerManager;
+import rajawali.animation.Animation3D;
 import rajawali.filters.IPostProcessingFilter;
 import rajawali.materials.AMaterial;
 import rajawali.materials.SimpleMaterial;
@@ -36,6 +36,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.opengl.Matrix;
+import android.os.SystemClock;
 import android.service.wallpaper.WallpaperService;
 import android.view.MotionEvent;
 import android.view.WindowManager;
@@ -58,10 +59,12 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	protected Timer mTimer;
 	protected int mFrameCount;
 	private long mStartTime = System.nanoTime();
+	private long mLastRender;
 
 	protected float[] mVMatrix = new float[16];
 	protected float[] mPMatrix = new float[16];
 	protected List<BaseObject3D> mChildren;
+	private List<Animation3D> mAnimations;
 	protected boolean mEnableDepthBuffer = true;
 
 	protected TextureManager mTextureManager;
@@ -137,6 +140,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		AMaterial.setLoaderContext(context);
 		
 		mContext = context;
+		mAnimations = Collections.synchronizedList(new CopyOnWriteArrayList<Animation3D>());
 		mChildren = Collections.synchronizedList(new CopyOnWriteArrayList<BaseObject3D>());
 		mFilters = Collections.synchronizedList(new CopyOnWriteArrayList<IPostProcessingFilter>());
 		mPlugins = Collections.synchronizedList(new CopyOnWriteArrayList<IRendererPlugin>());
@@ -148,6 +152,27 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mSceneCachingEnabled = true;
 		mPostProcessingRenderer = new PostProcessingRenderer(this);
 		mFrameRate = getRefreshRate();
+	}
+	
+	/**
+	 * Register an animation to be managed by the renderer. This is optional leaving open the possibility to manage
+	 * updates on Animations in your own implementation. Returns true on success.
+	 * 
+	 * @param anim
+	 * @return
+	 */
+	public boolean registerAnimation(Animation3D anim) {
+		return mAnimations.add(anim);
+	}
+	
+	/**
+	 * Remove a managed animation. Returns true on success.
+	 * 
+	 * @param anim
+	 * @return
+	 */
+	public boolean unregisterAnimation(Animation3D anim) {
+		return mAnimations.remove(anim);
 	}
 
 	/**
@@ -274,6 +299,9 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	private void render() {
+		final double deltaTime = (SystemClock.elapsedRealtime() - mLastRender) / 1000d;
+		mLastRender = SystemClock.elapsedRealtime();
+		
 		int clearMask = GLES20.GL_COLOR_BUFFER_BIT;
 
 		ColorPickerInfo pickerInfo = mPickerInfo;
@@ -325,6 +353,13 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		}
 
 		mCamera.updateFrustum(mPMatrix,mVMatrix); //update frustum plane
+		
+		// Update all registered animations
+		for (int i = 0; i < mAnimations.size(); i++) {
+			Animation3D anim = mAnimations.get(i);
+			if (anim.isPlaying())
+				anim.update(deltaTime);
+		}
 
 		for (int i = 0; i < mChildren.size(); i++)
 			mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
@@ -433,6 +468,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	public void startRendering() {
+		mLastRender = SystemClock.elapsedRealtime();
+		
 		if (mTimer != null) {
 			mTimer.cancel();
 			mTimer.purge();
@@ -467,7 +504,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 
 	public void onSurfaceDestroyed() {
 		stopRendering();
-		TimerManager.getInstance().clear();
 		if (mTextureManager != null)
 			mTextureManager.reset();
 		destroyScene();

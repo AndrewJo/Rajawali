@@ -312,8 +312,7 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 				if(mIsVisible)
 				{
 					GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, mGeometry.getIndexBufferInfo().bufferHandle);
-					fix.android.opengl.GLES20.glDrawElements(mDrawingMode, mGeometry.getNumIndices(), mElementsBufferType,
-							0);
+					GLES20.glDrawElements(mDrawingMode, mGeometry.getNumIndices(), mElementsBufferType,	0);
 					GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 				}
 				if (!mIsPartOfBatch && !mRenderChildrenAsBatch) {
@@ -325,8 +324,7 @@ public class BaseObject3D extends ATransformable3D implements Comparable<BaseObj
 				pickerMat.setModelMatrix(mMMatrix);
 				pickerMat.setViewMatrix(vMatrix);
 				GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, mGeometry.getIndexBufferInfo().bufferHandle);
-				fix.android.opengl.GLES20.glDrawElements(mDrawingMode, mGeometry.getNumIndices(), mElementsBufferType,
-						0);
+				GLES20.glDrawElements(mDrawingMode, mGeometry.getNumIndices(), mElementsBufferType,	0);
 				GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 
 				pickerMat.unbindTextures();
