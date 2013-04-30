@@ -25,6 +25,7 @@ import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import rajawali.renderer.plugins.IRendererPlugin;
 import rajawali.scenegraph.IGraphNode;
+import rajawali.scenegraph.RajawaliScene;
 import rajawali.util.FPSUpdateListener;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import rajawali.util.RajLog;
@@ -146,6 +147,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	protected boolean mUseSceneGraph = false;
 	protected boolean mDisplaySceneGraph = false;
 	
+	private List<RajawaliScene> mScenes;
+	
 	public RajawaliRenderer(Context context) {
 		RajLog.i("IMPORTANT: Rajawali's coordinate system has changed. It now reflects");
 		RajLog.i("the OpenGL standard. Please invert the camera's z coordinate or");
@@ -167,6 +170,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mPostProcessingRenderer = new PostProcessingRenderer(this);
 		mFrameRate = getRefreshRate();
 		mFrameTaskQueue = new LinkedList<AFrameTask>();
+		mScenes = Collections.synchronizedList(new CopyOnWriteArrayList<RajawaliScene>());
 	}
 	
 	/**
