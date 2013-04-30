@@ -2,6 +2,7 @@ package rajawali.scenegraph;
 
 import rajawali.Camera;
 import rajawali.bounds.IBoundingVolume;
+import rajawali.scene.RajawaliScene;
 
 
 /**
@@ -13,6 +14,14 @@ import rajawali.bounds.IBoundingVolume;
  * @author Jared Woolston (jwoolston@tenkiv.com)
  */
 public interface IGraphNode {
+	
+	/**
+	 * This enum defines the different scene graphs which {@link RajawaliScene}
+	 * can use. If a new type is created it should be added to this list. 
+	 */
+	public enum GRAPH_TYPE {
+		NONE, OCTREE
+	}
 	
 	/**
 	 * Adds an object to the scene graph. Implementations do not

@@ -35,13 +35,13 @@ public abstract class AFrameTask {
 	/**
 	 * The type of object this task is acting on.
 	 */
-	public enum TYPE {ANIMATION, CAMERA, LIGHT, OBJECT3D, PLUGIN, TEXTURE};
+	public enum TYPE {ANIMATION, CAMERA, LIGHT, OBJECT3D, PLUGIN, TEXTURE, SCENE};
 	
 	private AFrameTask.TASK mFrameTask = AFrameTask.TASK.NONE; //The task to perform
 	private int mFrameTaskIndex = UNUSED_INDEX; //The index to replace, if relevant
 	private AFrameTask mReplaceObject; //The AFrameTask object to replace if used
 	
-	static final int UNUSED_INDEX = -1;
+	public static final int UNUSED_INDEX = -1;
 	
 	/**
 	 * Gets the type of object this task acts on.
@@ -62,7 +62,7 @@ public abstract class AFrameTask {
 	 * 
 	 * @param task {@AFrameTask.TASK} to be performed.
 	 */
-	void setTask(AFrameTask.TASK task) {
+	public void setTask(AFrameTask.TASK task) {
 		mFrameTask = task;
 	}
 	
@@ -80,7 +80,7 @@ public abstract class AFrameTask {
 	 * 
 	 * @param int The index.
 	 */
-	void setIndex(int index) {
+	public void setIndex(int index) {
 		mFrameTaskIndex = index;
 	}
 	
@@ -98,7 +98,7 @@ public abstract class AFrameTask {
 	 * 
 	 * @param object {@link AFrameTask} object to be replaced with this one.
 	 */
-	void setReplaceObject(AFrameTask object) {
+	public void setReplaceObject(AFrameTask object) {
 		mReplaceObject = object;
 	}
 }
