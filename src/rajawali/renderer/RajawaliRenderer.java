@@ -155,6 +155,31 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	public RajawaliScene getScene(int scene) {
 		return mScenes.get(scene);
 	}
+	
+	/**
+	* Replaces a {@link RajawaliScene} in the renderer at the specified location
+	* in the list. This does not validate the index, so if it is not
+	* contained in the list already, an exception will be thrown.
+	* 
+	* @param scene {@link RajawaliScene} object to add.
+	* @param location Integer index of the {@link RajawaliScene} to replace.
+	* @return boolean True if the replace task was successfully queued.
+	*/
+	public boolean replaceScene(RajawaliScene scene, int location) {
+		return queueReplaceTask(location, scene);
+	}
+	
+	/**
+	* Replaces the specified {@link RajawaliScene} in the renderer with the
+	* new one.
+	* 
+	* @param oldScene {@link RajawaliScene} object to be replaced.
+	* @param newScene {@link RajawaliScene} which will replace the old.
+	* @return boolean True if the replace task was successfully queued.
+	*/
+	public boolean replaceScene(RajawaliScene oldScene, RajawaliScene newScene) {
+		return queueReplaceTask(oldScene, newScene);
+	}
 
 	/**
 	* Adds a {@link RajawaliScene} to the renderer.
@@ -165,17 +190,35 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	public boolean addScene(RajawaliScene scene) {
 		return queueAddTask(scene);
 	}
-
+	
 	/**
-	* Replaces a {@link RajawaliScene} in the renderer at the specified location
-	* in the list. This does not validate the index, so if it is not
-	* contained in the list already, an exception will be thrown.
-	* 
-	* @param scene {@link RajawaliScene} object to add.
-	* @param location Integer index of the {@link RajawaliScene} to replace.
-	*/
-	public void replaceScene(RajawaliScene scene, int location) {
-		queueReplaceTask(location, scene);
+	 * Adds a {@link Collection} of scenes to the renderer.
+	 * 
+	 * @param scenes {@link Collection} of scenes to be added.
+	 * @return boolean True if the addition was successfully queued.
+	 */
+	public boolean addScenes(Collection<RajawaliScene> scenes) {
+		ArrayList<AFrameTask> tasks = new ArrayList<AFrameTask>(scenes);
+		return queueAddAllTask(tasks);
+	}
+	
+	/**
+	 * Removes a {@link RajawaliScene} from the renderer.
+	 * 
+	 * @param scene {@link RajawaliScene} object to be removed.
+	 * @return boolean True if the removal was successfully queued.
+	 */
+	public boolean removeScene(RajawaliScene scene) {
+		return queueRemoveTask(scene);
+	}
+	
+	/**
+	 * Clears all scenes from the renderer. This should be used with
+	 * extreme care as it will also clear the current scene. If this 
+	 * is done while still rendering, bad things will happen.
+	 */
+	protected void clearScenes() {
+		queueClearTask(AFrameTask.TYPE.SCENE);
 	}
 
 	/**
@@ -200,10 +243,26 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	* @param location The index of the scene to replace.
 	* @param useNow boolean indicating if we should switch to this
 	* scene immediately.
+	* @return boolean True if the replace task was successfully queued.
 	*/
-	public void replaceScene(RajawaliScene scene, int location, boolean useNow) {
-		replaceScene(scene, location);
+	public boolean replaceScene(RajawaliScene scene, int location, boolean useNow) {
+		boolean success = replaceScene(scene, location);
 		if (useNow) setScene(scene);
+		return success;
+	}
+	
+	/**
+	* Replaces the specified {@link RajawaliScene} in the renderer with the
+	* new one.
+	* 
+	* @param oldScene {@link RajawaliScene} object to be replaced.
+	* @param newScene {@link RajawaliScene} which will replace the old.
+	* @return boolean True if the replace task was successfully queued.
+	*/
+	public boolean replaceScene(RajawaliScene oldScene, RajawaliScene newScene, boolean useNow) {
+		boolean success = queueReplaceTask(oldScene, newScene);
+		if (useNow) setScene(newScene);
+		return success;
 	}
 	
 	/**
@@ -227,6 +286,12 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		return mCurrentScene.unregisterAnimation(anim);
 	}
 	
+	/**
+	 * Retrieve the current camera in use. This is the camera being
+	 * used by the current scene.
+	 * 
+	 * @return {@link Camera} currently in use.
+	 */
 	public Camera getCurrentCamera() {
 		return mCurrentScene.getCamera();
 	}
@@ -275,20 +340,10 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mTextureManager.validateTextures();
 
 		if (!mCurrentScene.hasPickerInfo()) {
-			if (mFilters.size() == 0)
-				GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-			else {
-				if (mPostProcessingRenderer.isEnabled())
-					mPostProcessingRenderer.bind();
-			}
 			int color = mCurrentScene.getBackgroundColor();
 			GLES20.glClearColor(Color.red(color)/255f, Color.green(color)/255f, Color.blue(color)/255f, Color.alpha(color)/255f);
 		}
 		mCurrentScene.render(deltaTime);
-		
-		if (!mCurrentScene.hasPickerInfo() && mPostProcessingRenderer.isEnabled()) {
-			mPostProcessingRenderer.render();
-		}
 	}
 
 	public void onOffsetsChanged(float xOffset, float yOffset, float xOffsetStep, float yOffsetStep, int xPixelOffset, int yPixelOffset) {
@@ -342,13 +397,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		
 	}
 	
-	protected void clearScenes() {
-		EmptyTask task = new EmptyTask(AFrameTask.TYPE.SCENE);
-		task.setIndex(AFrameTask.UNUSED_INDEX);
-		task.setTask(AFrameTask.TASK.REMOVE_ALL);
-		addTaskToQueue(task);
-	}
-
 	/**
 	 * Scene construction should happen here, not in onSurfaceCreated()
 	 */
@@ -687,10 +735,16 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * @param index integer index to remove the child at. 
 	 */
 	private void internalRemoveScene(RajawaliScene scene, int index) {
+		RajawaliScene removal = scene;
 		if (index == AFrameTask.UNUSED_INDEX) {
 			mScenes.remove(scene);
 		} else {
-			mScenes.remove(index);
+			removal = mScenes.remove(index);
+		}
+		if (mCurrentScene.equals(removal)) {
+			//If the current camera is the one being removed,
+			//switch to the new 0 index camera.
+			mCurrentScene = mScenes.get(0);
 		}
 	}
 	
@@ -700,6 +754,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 */
 	private void internalClearScenes() {
 		mScenes.clear();
+		mCurrentScene = null;
 	}
 	
 	/**
@@ -724,6 +779,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * @param index Integer index to place the object at.
 	 * @return boolean True if the task was successfully queued.
 	 */
+	@SuppressWarnings("unused")
 	private boolean queueAddTask(AFrameTask task, int index) {
 		task.setTask(AFrameTask.TASK.ADD);
 		task.setIndex(index);
@@ -738,6 +794,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * @param index Integer index to remove the object at.
 	 * @return boolean True if the task was successfully queued.
 	 */
+	@SuppressWarnings("unused")
 	private boolean queueRemoveTask(AFrameTask.TYPE type, int index) {
 		EmptyTask task = new EmptyTask(type);
 		task.setTask(AFrameTask.TASK.REMOVE);
@@ -814,30 +871,11 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		return addTaskToQueue(task);
 	}
 
-	public void addPostProcessingFilter(IPostProcessingFilter filter) {
-		if(mFilters.size() > 0)
-			mFilters.remove(0);
-		mFilters.add(filter);
-		mPostProcessingRenderer.setEnabled(true);
-		mPostProcessingRenderer.setFilter(filter);
-	}
-
 	public void accept(INodeVisitor visitor) { //TODO: Handle
 		visitor.apply(this);
 		//for (int i = 0; i < mChildren.size(); i++)
 		//	mChildren.get(i).accept(visitor);
 	}	
-
-	public void removePostProcessingFilter(IPostProcessingFilter filter) {
-		mFilters.remove(filter);
-	}
-
-	public void clearPostProcessingFilters() {
-		mFilters.clear();
-		mPostProcessingRenderer.unbind();
-		mPostProcessingRenderer.destroy();
-		mPostProcessingRenderer = new PostProcessingRenderer(this);
-	}
 
 	public int getViewportWidth() {
 		return mViewportWidth;
