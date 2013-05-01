@@ -10,7 +10,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import rajawali.BaseObject3D;
 import rajawali.Camera;
 import rajawali.animation.Animation3D;
-import rajawali.filters.IPostProcessingFilter;
 import rajawali.materials.SimpleMaterial;
 import rajawali.materials.SkyboxMaterial;
 import rajawali.materials.TextureInfo;
@@ -48,22 +47,24 @@ public class RajawaliScene extends AFrameTask {
 	
 	protected float[] mVMatrix = new float[16];
 	protected float[] mPMatrix = new float[16];
-	protected boolean mEnableDepthBuffer = true;
 	
 	protected float mRed, mBlue, mGreen, mAlpha;
 	protected Cube mSkybox;
+	/**
+	* Temporary camera which will be switched to by the GL thread.
+	* Guarded by {@link #mNextSkyboxLock}
+	*/
+	private Cube mNextSkybox;
+	private final Object mNextSkyboxLock = new Object();
 	protected TextureInfo mSkyboxTextureInfo;
 	
 	protected ColorPickerInfo mPickerInfo;
-
-	protected List<IPostProcessingFilter> mFilters;
 	protected boolean mReloadPickerInfo;
-	
 	protected boolean mUsesCoverageAa;
+	protected boolean mEnableDepthBuffer = true;
 
 	private List<BaseObject3D> mChildren;
 	private List<Animation3D> mAnimations;
-
 	private List<IRendererPlugin> mPlugins;
 	
 	/**
@@ -73,13 +74,10 @@ public class RajawaliScene extends AFrameTask {
 	* or prior to rendering such as initScene(). 
 	*/
 	protected Camera mCamera;
-	/**
-	* List of all cameras in the scene.
-	*/
-	private List<Camera> mCameras; 
+	private List<Camera> mCameras; //List of all cameras in the scene.
 	/**
 	* Temporary camera which will be switched to by the GL thread.
-	* Guarded by mNextCameraLock
+	* Guarded by {@link #mNextCameraLock}
 	*/
 	private Camera mNextCamera;
 	private final Object mNextCameraLock = new Object();
@@ -95,10 +93,6 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private LinkedList<AFrameTask> mFrameTaskQueue;
 
-	protected IGraphNode mSceneGraph;
-	
-	protected GRAPH_TYPE mSceneGraphType = GRAPH_TYPE.NONE;
-	
 	/**
 	 * Default to not using scene graph. This is for backwards
 	 * compatibility as well as efficiency for simple scenes.
@@ -107,6 +101,8 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	protected boolean mUseSceneGraph = false;
 	protected boolean mDisplaySceneGraph = false;
+	protected IGraphNode mSceneGraph; //The scenegraph for this scene
+	protected GRAPH_TYPE mSceneGraphType = GRAPH_TYPE.NONE; //The type of graph type for this scene.
 	
 	public RajawaliScene(RajawaliRenderer renderer) {
 		mRenderer = renderer;
@@ -118,9 +114,9 @@ public class RajawaliScene extends AFrameTask {
 		mFrameTaskQueue = new LinkedList<AFrameTask>();
 		
 		mCamera = new Camera();
+		mCamera.setZ(mEyeZ);
 		mCameras = Collections.synchronizedList(new CopyOnWriteArrayList<Camera>());
 		addCamera(mCamera);
-		mCamera.setZ(mEyeZ);
 	}
 	
 	public RajawaliScene(RajawaliRenderer renderer, GRAPH_TYPE type) {
@@ -130,7 +126,7 @@ public class RajawaliScene extends AFrameTask {
 	}
 	
 	/**
-	 * Automatically creates the specified scen graph type with that graph's default
+	 * Automatically creates the specified scene graph type with that graph's default
 	 * behavior. If you want to use a specific constructor you will need to override this
 	 * method. 
 	 */
@@ -144,10 +140,354 @@ public class RajawaliScene extends AFrameTask {
 		}
 	}
 	
+	/**
+	* Sets the {@link Camera} currently being used to display the scene.
+	* 
+	* @param mCamera {@link Camera} object to display the scene with.
+	*/
+	public void setCamera(Camera camera) {
+		synchronized (mNextCameraLock) {
+			mNextCamera = camera;
+		}
+	}
+
+	/**
+	* Sets the {@link Camera} currently being used to display the scene.
+	* 
+	* @param camera Index of the {@link Camera} to use.
+	*/
+	public void setCamera(int camera) {
+		setCamera(mCameras.get(camera));
+	}
+
+	/**
+	* Fetches the {@link Camera} currently being used to display the scene.
+	* Note that the camera is not thread safe so this should be used
+	* with extreme caution.
+	* 
+	* @return {@link Camera} object currently used for the scene.
+	* @see {@link RajawaliRenderer#mCamera}
+	*/
+	public Camera getCamera() {
+		return this.mCamera;
+	}
+
+	/**
+	* Fetches the specified {@link Camera}. 
+	* 
+	* @param camera Index of the {@link Camera} to fetch.
+	* @return Camera which was retrieved.
+	*/
+	public Camera getCamera(int camera) {
+		return mCameras.get(camera);
+	}
+
+	/**
+	* Adds a {@link Camera} to the scene.
+	* 
+	* @param camera {@link Camera} object to add.
+	* @return boolean True if the addition was successfully queued.
+	*/
+	public boolean addCamera(Camera camera) {
+		return queueAddTask(camera);
+	}
+	
+	/**
+	 * Adds a {@link Collection} of {@link Camera} objects to the scene.
+	 * 
+	 * @param cameras {@link Collection} of {@link Camera} objects to add.
+	 * @return boolean True if the addition was successfully queued.
+	 */
+	public boolean addCameras(Collection<Camera> cameras) {
+		ArrayList<AFrameTask> tasks = new ArrayList<AFrameTask>(cameras);
+		return queueAddAllTask(tasks);
+	}
+	
+	/**
+	 * Removes a {@link Camera} from the scene. 
+	 * 
+	 * @param camera {@link Camera} object to remove.
+	 * @return boolean True if the removal was successfully queued.
+	 */
+	public boolean removeCamera(Camera camera) {
+		return queueRemoveTask(camera);
+	}
+
+	/**
+	* Replaces a {@link Camera} in the renderer at the specified location
+	* in the list. This does not validate the index, so if it is not
+	* contained in the list already, an exception will be thrown.
+	* 
+	* @param camera {@link Camera} object to add.
+	* @param location Integer index of the camera to replace.
+	* @param boolean True if the replacement was successfully queued.
+	*/
+	public boolean replaceCamera(Camera camera, int location) {
+		return queueReplaceTask(location, camera);
+	}
+	
+	/**
+	* Replaces the specified {@link Camera} in the renderer with the
+	* provided {@link Camera}.
+	* 
+	* @param oldCamera {@link Camera} object to be replaced.
+	* @param newCamera {@link Camera} object replacing the old.
+	* @param boolean True if the replacement was successfully queued.
+	*/
+	public boolean replaceCamera(Camera oldCamera, Camera newCamera) {
+		return queueReplaceTask(oldCamera, newCamera);
+	}
+
+	/**
+	* Adds a {@link Camera}, switching to it immediately
+	* 
+	* @param camera The {@link Camera} to add.
+	* @return boolean True if the addition was successfully queued.
+	*/
+	public boolean addAndSwitchCamera(Camera camera) {
+		boolean success = addCamera(camera);
+		setCamera(camera);
+		return success;
+	}
+
+	/**
+	* Replaces a {@link Camera} at the specified index with an option to switch to it
+	* immediately.
+	* 
+	* @param camera The {@link Camera} to add.
+	* @param location The index of the camera to replace.
+	* @return boolean True if the replacement was successfully queued.
+	*/
+	public boolean replaceAndSwitchCamera(Camera camera, int location) {
+		boolean success = replaceCamera(camera, location);
+		setCamera(camera);
+		return success;
+	}
+	
+	/**
+	* Replaces the specified {@link Camera} in the renderer with the
+	* provided {@link Camera}, switching immediately.
+	* 
+	* @param oldCamera {@link Camera} object to be replaced.
+	* @param newCamera {@link Camera} object replacing the old.
+	* @param boolean True if the replacement was successfully queued.
+	*/
+	public boolean replaceAndSwitchCamera(Camera oldCamera, Camera newCamera) {
+		boolean success = queueReplaceTask(oldCamera, newCamera);
+		setCamera(newCamera);
+		return success;
+	}
+	
+	/**
+	 * Replaces a {@link BaseObject3D} at the specified index with a new one.
+	 * 
+	 * @param child {@link BaseObject3D} the new child.
+	 * @param location The index of the child to replace.
+	 * @return boolean True if the replacement was successfully queued.
+	 */
+	public boolean replaceChild(BaseObject3D child, int location) {
+		return queueReplaceTask(location, child);
+	}
+	
+	/**
+	 * Replaces a specified {@link BaseObject3D} with a new one.
+	 * 
+	 * @param oldChild {@link BaseObject3D} the old child.
+	 * @param newChild {@link BaseObject3D} the new child.
+	 * @return boolean True if the replacement was successfully queued.
+	 */
+	public boolean replaceChild(BaseObject3D oldChild, BaseObject3D newChild) {
+		return queueReplaceTask(oldChild, newChild);
+	}
+	
+	/**
+	 * Requests the addition of a child to the scene. The child
+	 * will be added to the end of the list. 
+	 * 
+	 * @param child {@link BaseObject3D} child to be added.
+	 * @return True if the child was successfully queued for addition.
+	 */
+	public boolean addChild(BaseObject3D child) {
+		return queueAddTask(child);
+	}
+	
+	/**
+	 * Requests the addition of a {@link Collection} of children to the scene.
+	 * 
+	 * @param children {@link Collection} of {@link BaseObject3D} children to add.
+	 * @return boolean True if the addition was successfully queued.
+	 */
+	public boolean addChildren(Collection<BaseObject3D> children) {
+		ArrayList<AFrameTask> tasks = new ArrayList<AFrameTask>(children);
+		return queueAddAllTask(tasks);
+	}
+	
+	/**
+	 * Requests the removal of a child from the scene.
+	 * 
+	 * @param child {@link BaseObject3D} child to be removed.
+	 * @return boolean True if the child was successfully queued for removal.
+	 */
+	public boolean removeChild(BaseObject3D child) {
+		return queueRemoveTask(child);
+	}
+	
+	/**
+	 * Requests the removal of all children from the scene.
+	 * 
+	 * @return boolean True if the clear was successfully queued.
+	 */
+	public boolean clearChildren() {
+		return queueClearTask(AFrameTask.TYPE.OBJECT3D);
+	}
+	
+	/**
+	 * Register an animation to be managed by the scene. This is optional 
+	 * leaving open the possibility to manage updates on Animations in your own implementation.
+	 * 
+	 * @param anim {@link Animation3D} to be registered.
+	 * @return boolean True if the registration was queued successfully.
+	 */
+	public boolean registerAnimation(Animation3D anim) {
+		return queueAddTask(anim);
+	}
+	
+	/**
+	 * Remove a managed animation. If the animation is not a member of the scene, 
+	 * nothing will happen.
+	 * 
+	 * @param anim {@link Animation3D} to be unregistered.
+	 * @return boolean True if the unregister was queued successfully.
+	 */
+	public boolean unregisterAnimation(Animation3D anim) {
+		return queueRemoveTask(anim);
+	}
+	
+	/**
+	 * Replace an {@link Animation3D} with a new one.
+	 * 
+	 * @param oldAnim {@link Animation3D} the old animation.
+	 * @param newAnim {@link Animation3D} the new animation.
+	 * @return boolean True if the replacement task was queued successfully.
+	 */
+	public boolean replaceAnimation(Animation3D oldAnim, Animation3D newAnim) {
+		return queueReplaceTask(oldAnim, newAnim);
+	}
+	
+	/**
+	 * Adds a {@link Collection} of {@link Animation3D} objects to the scene.
+	 * 
+	 * @param anims {@link Collection} containing the {@link Animation3D} objects to be added.
+	 * @return boolean True if the addition was queued successfully.
+	 */
+	public boolean registerAnimations(Collection<Animation3D> anims) {
+		ArrayList<AFrameTask> tasks = new ArrayList<AFrameTask>(anims);
+		return queueAddAllTask(tasks);
+	}
+	
+	/**
+	 * Removes all {@link Animation3D} objects from the scene.
+	 * 
+	 * @return boolean True if the clear task was queued successfully.
+	 */
+	public boolean clearAnimations() {
+		return queueClearTask(AFrameTask.TYPE.ANIMATION);
+	}
+	
+	/**
+	 * Creates a skybox with the specified single texture.
+	 * 
+	 * @param resourceId int Resouce id of the skybox texture.
+	 */
+	public void setSkybox(int resourceId) {
+		synchronized (mCameras) {
+			for (int i = 0, j = mCameras.size(); i < j; ++i)
+				mCameras.get(i).setFarPlane(1000);
+		}
+		synchronized (mNextSkyboxLock) {
+			mNextSkybox = new Cube(700, true, false);
+			mNextSkybox.setDoubleSided(true);
+			mSkyboxTextureInfo = mRenderer.getTextureManager().addTexture(BitmapFactory.decodeResource(
+					mRenderer.getContext().getResources(), resourceId));
+			SimpleMaterial material = new SimpleMaterial();
+			material.addTexture(mSkyboxTextureInfo);
+			mNextSkybox.setMaterial(material);
+		}
+	}
+
+	/**
+	 * Creates a skybox with the specified 6 textures. 
+	 * 
+	 * @param front int Resource id for the front face.
+	 * @param right int Resource id for the right face.
+	 * @param back int Resource id for the back face.
+	 * @param left int Resource id for the left face.
+	 * @param up int Resource id for the up face.
+	 * @param down int Resource id for the down face.
+	 */
+	public void setSkybox(int front, int right, int back, int left, int up, int down) {
+		synchronized (mCameras) {
+			for (int i = 0, j = mCameras.size(); i < j; ++i)
+				mCameras.get(i).setFarPlane(1000);
+		}
+		synchronized (mNextSkyboxLock) {
+			mNextSkybox = new Cube(700, true);
+			Context context = mRenderer.getContext();
+			Bitmap[] textures = new Bitmap[6];
+			textures[0] = BitmapFactory.decodeResource(context.getResources(), left);
+			textures[1] = BitmapFactory.decodeResource(context.getResources(), right);
+			textures[2] = BitmapFactory.decodeResource(context.getResources(), up);
+			textures[3] = BitmapFactory.decodeResource(context.getResources(), down);
+			textures[4] = BitmapFactory.decodeResource(context.getResources(), front);
+			textures[5] = BitmapFactory.decodeResource(context.getResources(), back);
+
+			mSkyboxTextureInfo = mRenderer.getTextureManager().addCubemapTextures(textures);
+			SkyboxMaterial mat = new SkyboxMaterial();
+			mat.addTexture(mSkyboxTextureInfo);
+			mNextSkybox.setMaterial(mat);
+		}
+	}
+	
+	/**
+	 * Updates the sky box textures with a single texture. 
+	 * 
+	 * @param resourceId int the resource id of the new texture.
+	 */
+	public void updateSkybox(int resourceId) {
+		mRenderer.getTextureManager().updateTexture(mSkyboxTextureInfo, BitmapFactory.decodeResource(
+				mRenderer.getContext().getResources(), resourceId));
+	}
+	
+	/**
+	 * Updates the sky box textures with 6 new resource ids. 
+	 * 
+	 * @param front int Resource id for the front face.
+	 * @param right int Resource id for the right face.
+	 * @param back int Resource id for the back face.
+	 * @param left int Resource id for the left face.
+	 * @param up int Resource id for the up face.
+	 * @param down int Resource id for the down face.
+	 */
+	public void updateSkybox(int front, int right, int back, int left, int up, int down) {
+		Context context = mRenderer.getContext();
+		Bitmap[] textures = new Bitmap[6];
+		textures[0] = BitmapFactory.decodeResource(context.getResources(), left);
+		textures[1] = BitmapFactory.decodeResource(context.getResources(), right);
+		textures[2] = BitmapFactory.decodeResource(context.getResources(), up);
+		textures[3] = BitmapFactory.decodeResource(context.getResources(), down);
+		textures[4] = BitmapFactory.decodeResource(context.getResources(), front);
+		textures[5] = BitmapFactory.decodeResource(context.getResources(), back);
+
+		mRenderer.getTextureManager().updateCubemapTextures(mSkyboxTextureInfo, textures);
+	}
+	
 	public void requestColorPickingTexture(ColorPickerInfo pickerInfo) {
 		mPickerInfo = pickerInfo;
 	}
 	
+	/**
+	 * Reloads this scene.
+	 */
 	public void reload() {
 		reloadChildren();
 		if(mSkybox != null)
@@ -156,6 +496,9 @@ public class RajawaliScene extends AFrameTask {
 		mReloadPickerInfo = true;
 	}
 	
+	/**
+	 * Clears the scene of contents. Note that this is NOT the same as destroying the scene.
+	 */
 	public void clear() {
 		if (mChildren.size() > 0) {
 			queueClearTask(AFrameTask.TYPE.OBJECT3D);
@@ -165,11 +508,24 @@ public class RajawaliScene extends AFrameTask {
 		}
 	}
 	
+	/**
+	 * Is the object picking info?
+	 * 
+	 * @return boolean True if object picking is active.
+	 */
 	public boolean hasPickerInfo() {
 		return (mPickerInfo != null);
 	}
 	
 	public void render(double deltaTime) {
+		performFrameTasks(); //Handle the task queue
+		synchronized (mNextSkyboxLock) {
+			//Check if we need to switch the skybox, and if so, do it.
+			if (mNextSkybox != null) {
+				mSkybox = mNextSkybox;
+				mNextSkybox = null;
+			}
+		}
 		synchronized (mNextCameraLock) { 
 			//Check if we need to switch the camera, and if so, do it.
 			if (mNextCamera != null) {
@@ -178,7 +534,6 @@ public class RajawaliScene extends AFrameTask {
 				mCamera.setProjectionMatrix(mRenderer.getViewportWidth(), mRenderer.getViewportHeight());
 			}
 		}
-		performFrameTasks();
 		
 		int clearMask = GLES20.GL_COLOR_BUFFER_BIT;
 
@@ -223,22 +578,24 @@ public class RajawaliScene extends AFrameTask {
 			}
 		}
 
-		mCamera.updateFrustum(mPMatrix,mVMatrix); //update frustum plane
+		mCamera.updateFrustum(mPMatrix, mVMatrix); //update frustum plane
 		
-		// Update all registered animations //TODO Synchronize
-		for (int i = 0; i < mAnimations.size(); i++) {
-			Animation3D anim = mAnimations.get(i);
-			if (anim.isPlaying())
-				anim.update(deltaTime);
+		// Update all registered animations
+		synchronized (mAnimations) {
+			for (int i = 0, j = mAnimations.size(); i < j; ++i) {
+				Animation3D anim = mAnimations.get(i);
+				if (anim.isPlaying())
+					anim.update(deltaTime);
+			}
 		}
 
-		for (int i = 0; i < mChildren.size(); i++) 
-			mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
+		synchronized (mChildren) {
+			for (int i = 0, j = mChildren.size(); i < j; ++i) 
+				mChildren.get(i).render(mCamera, mPMatrix, mVMatrix, pickerInfo);
+		}
 
 		if (mDisplaySceneGraph) {
-			synchronized (mChildren) {
-				mSceneGraph.displayGraph(mCamera, mPMatrix, mVMatrix);
-			}
+			mSceneGraph.displayGraph(mCamera, mPMatrix, mVMatrix);
         }
 		
 		if (pickerInfo != null) {
@@ -246,233 +603,13 @@ public class RajawaliScene extends AFrameTask {
 			pickerInfo.getPicker().unbindFrameBuffer();
 			pickerInfo = null;
 			mPickerInfo = null;
-			render(deltaTime); //TODO posible error here
+			render(deltaTime); //TODO Possible timing error here
 		}
 
-		for (int i = 0, j = mPlugins.size(); i < j; i++)
-			mPlugins.get(i).render();
-	}
-	
-	/**
-	* Sets the camera currently being used to display the scene.
-	* 
-	* @param mCamera Camera object to display the scene with.
-	*/
-	public void setCamera(Camera camera) {
-		synchronized (mNextCameraLock) {
-			mNextCamera = camera;
+		synchronized (mPlugins) {
+			for (int i = 0, j = mPlugins.size(); i < j; i++)
+				mPlugins.get(i).render();
 		}
-	}
-
-	/**
-	* Sets the camera currently being used to display the scene.
-	* 
-	* @param camera Index of the camera to use.
-	*/
-	public void setCamera(int camera) {
-		setCamera(mCameras.get(camera));
-	}
-
-	/**
-	* Fetches the camera currently being used to display the scene.
-	* Note that the camera is not thread safe so this should be used
-	* with extreme caution.
-	* 
-	* @return Camera object currently used for the scene.
-	* @see {@link RajawaliRenderer#mCamera}
-	*/
-	public Camera getCamera() {
-		return this.mCamera;
-	}
-
-	/**
-	* Fetches the specified camera. 
-	* 
-	* @param camera Index of the camera to fetch.
-	* @return Camera which was retrieved.
-	*/
-	public Camera getCamera(int camera) {
-		return mCameras.get(camera);
-	}
-
-	/**
-	* Adds a camera to the scene.
-	* 
-	* @param camera {@link Camera} object to add.
-	* @return boolean True if the addition was successfully queued.
-	*/
-	public boolean addCamera(Camera camera) {
-		return queueAddTask(camera);
-	}
-	
-	/**
-	 * Removes a camera from the scene. 
-	 * 
-	 * @param camera {@link Camera} object to remove.
-	 * @return boolean True if the removal was successfully queued.
-	 */
-	public boolean removeCamera(Camera camera) {
-		return queueRemoveTask(camera);
-	}
-
-	/**
-	* Replaces a camera in the renderer at the specified location
-	* in the list. This does not validate the index, so if it is not
-	* contained in the list already, an exception will be thrown.
-	* 
-	* @param camera Camera object to add.
-	* @param location Integer index of the camera to replace.
-	* @param boolean True if the replacement was successfully queued.
-	*/
-	public boolean replaceCamera(Camera camera, int location) {
-		return queueReplaceTask(location, camera);
-	}
-
-	/**
-	* Adds a camera with the option to switch to it immediately
-	* 
-	* @param camera The Camera to add.
-	* @param useNow Boolean indicating if we should switch to this
-	* camera immediately.
-	* @return boolean True if the addition was successfully queued.
-	*/
-	public boolean addCamera(Camera camera, boolean useNow) {
-		boolean success = addCamera(camera);
-		if (useNow) setCamera(camera);
-		return success;
-	}
-
-	/**
-	* Replaces a camera at the specified index with an option to switch to it
-	* immediately.
-	* 
-	* @param camera The Camera to add.
-	* @param location The index of the camera to replace.
-	* @param useNow Boolean indicating if we should switch to this
-	* camera immediately.
-	*/
-	public void replaceCamera(Camera camera, int location, boolean useNow) {
-		replaceCamera(camera, location);
-		if (useNow) setCamera(camera);
-	}
-	
-	/**
-	 * Requests the addition of a child to the scene. The child
-	 * will be added to the end of the list. 
-	 * 
-	 * @param child {@link BaseObject3D} child to be added.
-	 * @return True if the child was successfully queued for addition.
-	 */
-	public boolean addChild(BaseObject3D child) {
-		return queueAddTask(child);
-	}
-	
-	/**
-	 * Requests the removal of a child from the scene.
-	 * 
-	 * @param child {@link BaseObject3D} child to be removed.
-	 * @return True if the child was successfully queued for removal.
-	 */
-	public boolean removeChild(BaseObject3D child) {
-		return queueRemoveTask(child);
-	}
-	
-	/**
-	 * Register an animation to be managed by the renderer. This is optional leaving open the possibility to manage
-	 * updates on Animations in your own implementation. Returns true on success.
-	 * 
-	 * @param anim
-	 * @return
-	 */
-	public boolean registerAnimation(Animation3D anim) {
-		return queueAddTask(anim);
-	}
-	
-	/**
-	 * Remove a managed animation. Returns true on success.
-	 * 
-	 * @param anim
-	 * @return
-	 */
-	public boolean unregisterAnimation(Animation3D anim) {
-		return queueRemoveTask(anim);
-	}
-	
-	/**
-	 * Creates a skybox with the specified single texture.
-	 * 
-	 * @param resourceId int Resouce id of the skybox texture.
-	 */
-	public void setSkybox(int resourceId) {
-		mCamera.setFarPlane(1000);
-		mSkybox = new Cube(700, true, false);
-		mSkybox.setDoubleSided(true);
-		mSkyboxTextureInfo = mRenderer.getTextureManager().addTexture(BitmapFactory.decodeResource(
-				mRenderer.getContext().getResources(), resourceId));
-		SimpleMaterial material = new SimpleMaterial();
-		material.addTexture(mSkyboxTextureInfo);
-		mSkybox.setMaterial(material);
-	}
-
-	/**
-	 * Creates a skybox with the specified 6 textures. 
-	 * 
-	 * @param front int Resource id for the front face.
-	 * @param right int Resource id for the right face.
-	 * @param back int Resource id for the back face.
-	 * @param left int Resource id for the left face.
-	 * @param up int Resource id for the up face.
-	 * @param down int Resource id for the down face.
-	 */
-	public void setSkybox(int front, int right, int back, int left, int up, int down) {
-		mCamera.setFarPlane(1000);
-		mSkybox = new Cube(700, true);
-		Context context = mRenderer.getContext();
-		Bitmap[] textures = new Bitmap[6];
-		textures[0] = BitmapFactory.decodeResource(context.getResources(), left);
-		textures[1] = BitmapFactory.decodeResource(context.getResources(), right);
-		textures[2] = BitmapFactory.decodeResource(context.getResources(), up);
-		textures[3] = BitmapFactory.decodeResource(context.getResources(), down);
-		textures[4] = BitmapFactory.decodeResource(context.getResources(), front);
-		textures[5] = BitmapFactory.decodeResource(context.getResources(), back);
-
-		mSkyboxTextureInfo = mRenderer.getTextureManager().addCubemapTextures(textures);
-		SkyboxMaterial mat = new SkyboxMaterial();
-		mat.addTexture(mSkyboxTextureInfo);
-		mSkybox.setMaterial(mat);
-	}
-	
-	/**
-	 * Updates the sky box textures with a single texture. 
-	 * 
-	 * @param resourceId int the resource id of the new texture.
-	 */
-	public void updateSkybox(int resourceId) {
-		mRenderer.getTextureManager().updateTexture(mSkyboxTextureInfo, BitmapFactory.decodeResource(
-				mRenderer.getContext().getResources(), resourceId));
-	}
-	
-	/**
-	 * Updates the sky box textures with 6 new resource ids. 
-	 * 
-	 * @param front int Resource id for the front face.
-	 * @param right int Resource id for the right face.
-	 * @param back int Resource id for the back face.
-	 * @param left int Resource id for the left face.
-	 * @param up int Resource id for the up face.
-	 * @param down int Resource id for the down face.
-	 */
-	public void updateSkybox(int front, int right, int back, int left, int up, int down) {
-		Context context = mRenderer.getContext();
-		Bitmap[] textures = new Bitmap[6];
-		textures[0] = BitmapFactory.decodeResource(context.getResources(), left);
-		textures[1] = BitmapFactory.decodeResource(context.getResources(), right);
-		textures[2] = BitmapFactory.decodeResource(context.getResources(), up);
-		textures[3] = BitmapFactory.decodeResource(context.getResources(), down);
-		textures[4] = BitmapFactory.decodeResource(context.getResources(), front);
-		textures[5] = BitmapFactory.decodeResource(context.getResources(), back);
-
-		mRenderer.getTextureManager().updateCubemapTextures(mSkyboxTextureInfo, textures);
 	}
 	
 	/**
@@ -511,7 +648,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param index Integer index to remove the object at.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueRemoveTask(AFrameTask.TYPE type, int index) {
+	protected boolean queueRemoveTask(AFrameTask.TYPE type, int index) {
 		EmptyTask task = new EmptyTask(type);
 		task.setTask(AFrameTask.TASK.REMOVE);
 		task.setIndex(index);
@@ -524,7 +661,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param task {@link AFrameTask} to be removed.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueRemoveTask(AFrameTask task) {
+	protected boolean queueRemoveTask(AFrameTask task) {
 		task.setTask(AFrameTask.TASK.REMOVE);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
 		return addTaskToQueue(task);
@@ -539,7 +676,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	private boolean queueReplaceTask(int index, AFrameTask replacement) {
+	protected boolean queueReplaceTask(int index, AFrameTask replacement) {
 		EmptyTask task = new EmptyTask(replacement.getFrameTaskType());
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(index);
@@ -554,7 +691,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	private boolean queueReplaceTask(AFrameTask task, AFrameTask replacement) {
+	protected boolean queueReplaceTask(AFrameTask task, AFrameTask replacement) {
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
 		task.setNewObject(replacement);
@@ -567,7 +704,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param collection {@link Collection} containing all the objects to add.
 	 * @return boolean True if the task was successfully queued. 
 	 */
-	public boolean queueAddAllTask(Collection<AFrameTask> collection) {
+	protected boolean queueAddAllTask(Collection<AFrameTask> collection) {
 		GroupTask task = new GroupTask(collection);
 		task.setTask(AFrameTask.TASK.ADD_ALL);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
@@ -580,7 +717,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param type {@link AFrameTask.TYPE} Which object list to clear (Cameras, BaseObject3D, etc)
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueClearTask(AFrameTask.TYPE type) {
+	protected boolean queueClearTask(AFrameTask.TYPE type) {
 		GroupTask task = new GroupTask(type);
 		task.setTask(AFrameTask.TASK.REMOVE_ALL);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
@@ -594,7 +731,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param collection {@link Collection} containing all the objects to be removed.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueRemoveAllTask(Collection<AFrameTask> collection) { 
+	protected boolean queueRemoveAllTask(Collection<AFrameTask> collection) { 
 		GroupTask task = new GroupTask(collection);
 		task.setTask(AFrameTask.TASK.REMOVE_ALL);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
@@ -1187,32 +1324,46 @@ public class RajawaliScene extends AFrameTask {
 		return mPlugins.size();
 	}
 	
+	/**
+	 * Reload all the children
+	 */
 	private void reloadChildren() {
-		for (int i = 0; i < mChildren.size(); i++)
-			mChildren.get(i).reload();
+		synchronized (mChildren) {
+			for (int i = 0, j = mChildren.size(); i < j; ++i)
+				mChildren.get(i).reload();
+		}
 	}
 
+	/**
+	 * Reload all the plugins
+	 */
 	private void reloadPlugins() {
-		for (int i = 0, j = mPlugins.size(); i < j; i++)
-			mPlugins.get(i).reload();
+		synchronized (mPlugins) {
+			for (int i = 0, j = mPlugins.size(); i < j; ++i)
+				mPlugins.get(i).reload();
+		}
+	}
+
+	/**
+	 * Clears any references the scene is holding for its contents. This does
+	 * not clear the items themselves as they may be held by some other scene.
+	 */
+	public void destroyScene() {
+		queueClearTask(AFrameTask.TYPE.ANIMATION);
+		queueClearTask(AFrameTask.TYPE.CAMERA);
+		queueClearTask(AFrameTask.TYPE.LIGHT);
+		queueClearTask(AFrameTask.TYPE.OBJECT3D);
+		queueClearTask(AFrameTask.TYPE.PLUGIN);
 	}
 	
 	/**
-	 * Scene construction should happen here, not in onSurfaceCreated()
+	 * Sets the background color of the scene.
+	 * 
+	 * @param red float red component (0-1.0f).
+	 * @param green float green component (0-1.0f).
+	 * @param blue float blue component (0-1.0f).
+	 * @param alpha float alpha component (0-1.0f).
 	 */
-	protected void initScene() {
-
-	}
-
-	public void destroyScene() { //TODO FIX
-		for (int i = 0; i < mChildren.size(); i++)
-			mChildren.get(i).destroy();
-		mChildren.clear();
-		for (int i = 0, j = mPlugins.size(); i < j; i++)
-			mPlugins.get(i).destroy();
-		mPlugins.clear();
-	}
-	
 	public void setBackgroundColor(float red, float green, float blue, float alpha) {
 		mRed = red;
 		mGreen = green;
@@ -1220,20 +1371,46 @@ public class RajawaliScene extends AFrameTask {
 		mAlpha = alpha;
 	}
 	
+	/**
+	 * Sets the background color of the scene. 
+	 * 
+	 * @param color Android color integer.
+	 */
 	public void setBackgroundColor(int color) {
 		setBackgroundColor(Color.red(color) / 255f, Color.green(color) / 255f, Color.blue(color) / 255f, Color.alpha(color) / 255f);
 	}
 	
+	/**
+	 * Retrieves the background color of the scene.
+	 * 
+	 * @return Android color integer.
+	 */
 	public int getBackgroundColor() {
 		return Color.argb((int) (mAlpha*255f), (int) (mRed*255f), (int) (mGreen*255f), (int) (mBlue*255f));
 	}
 	
+	/**
+	 * Updates the projection matrix of the current camera for new view port dimensions.
+	 * 
+	 * @param width int the new viewport width in pixels.
+	 * @param height in the new viewport height in pixes.
+	 */
 	public void updateProjectionMatrix(int width, int height) {
 		mCamera.setProjectionMatrix(width, height);
 	}
 	
 	public void setUsesCoverageAa(boolean value) {
 		mUsesCoverageAa = value;
+	}
+	
+	/**
+	 * Set if the scene graph should be displayed. How it is 
+	 * displayed is left to the implimentation of the graph.
+	 * 
+	 * @param display If true, the scene graph will be displayed.
+	 */
+	public void displaySceneGraph(boolean display) {
+		mDisplaySceneGraph = display;
 	}
 
 	/**

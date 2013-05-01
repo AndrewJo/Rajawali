@@ -222,46 +222,42 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 
 	/**
-	* Adds a {@link RajawaliScene} with the option to switch to it immediately
+	* Adds a {@link RajawaliScene}, switching to it immediately
 	* 
 	* @param scene The {@link RajawaliScene} to add.
-	* @param useNow boolean indicating if we should switch to this
-	* {@link RajawaliScene} immediately.
 	* @return boolean True if the addition task was successfully queued.
 	*/
-	public boolean addScene(RajawaliScene scene, boolean useNow) {
+	public boolean addAndSwitchScene(RajawaliScene scene) {
 		boolean success = addScene(scene);
-		if (useNow) setScene(scene);
+		setScene(scene);
 		return success;
 	}
 
 	/**
-	* Replaces a {@link RajawaliScene} at the specified index with an option to switch to it
+	* Replaces a {@link RajawaliScene} at the specified index with an switching to it
 	* immediately.
 	* 
 	* @param scene The {@link RajawaliScene} to add.
 	* @param location The index of the scene to replace.
-	* @param useNow boolean indicating if we should switch to this
-	* scene immediately.
 	* @return boolean True if the replace task was successfully queued.
 	*/
-	public boolean replaceScene(RajawaliScene scene, int location, boolean useNow) {
+	public boolean replaceAndSwitchScene(RajawaliScene scene, int location) {
 		boolean success = replaceScene(scene, location);
-		if (useNow) setScene(scene);
+		setScene(scene);
 		return success;
 	}
 	
 	/**
 	* Replaces the specified {@link RajawaliScene} in the renderer with the
-	* new one. If the scene does not exist, nothing will happen.
+	* new one, switching to it immediately. If the scene does not exist, nothing will happen.
 	* 
 	* @param oldScene {@link RajawaliScene} object to be replaced.
 	* @param newScene {@link RajawaliScene} which will replace the old.
 	* @return boolean True if the replace task was successfully queued.
 	*/
-	public boolean replaceScene(RajawaliScene oldScene, RajawaliScene newScene, boolean useNow) {
+	public boolean replaceAndSwitchScene(RajawaliScene oldScene, RajawaliScene newScene) {
 		boolean success = queueReplaceTask(oldScene, newScene);
-		if (useNow) setScene(newScene);
+		setScene(newScene);
 		return success;
 	}
 	
@@ -277,7 +273,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
-	 * Remove a managed animation. If the animation is not a member of the scene, 
+	 * Remove a managed animation. If the animation is not a member of the current scene, 
 	 * nothing will happen.
 	 * 
 	 * @param anim {@link Animation3D} to be unregistered.
@@ -308,15 +304,14 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
-	 * Adds a {@link Camera} to the current scene with an option to switch
+	 * Adds a {@link Camera} to the current scene switching
 	 * to it immediately.
 	 * 
 	 * @param camera {@link Camera} to add.
-	 * @param useNow boolean True will switch the camera on the next frame.
 	 * @return boolean True if the addition was queued successfully.
 	 */
-	public boolean addCamera(Camera camera, boolean useNow) {
-		return mCurrentScene.addCamera(camera, useNow);
+	public boolean addAndSwitchCamera(Camera camera) {
+		return mCurrentScene.addAndSwitchCamera(camera);
 	}
 	
 	/**
