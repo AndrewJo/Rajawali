@@ -315,6 +315,18 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
+	 * Replace a {@link Camera} at the specified index in the current scene with a new one, 
+	 * switching immediately.
+	 * 
+	 * @param camera {@link Camera} the new camera.
+	 * @param index The integer index of the camera to replace.
+	 * @return boolean True if the replacement was queued successfully.
+	 */
+	public boolean replaceAndSwitchCamera(Camera camera, int index) {
+		return mCurrentScene.replaceAndSwitchCamera(camera, index);
+	}
+	
+	/**
 	 * Adds a {@link Camera} to the current scene switching
 	 * to it immediately.
 	 * 
@@ -765,7 +777,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 */
 	private void internalReplaceScene(AFrameTask scene, RajawaliScene replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mScenes.set(index, (RajawaliScene) scene);
+			mScenes.set(index, replace);
 		} else {
 			mScenes.set(mScenes.indexOf(replace), (RajawaliScene) scene);
 		}

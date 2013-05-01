@@ -999,7 +999,7 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private void internalReplaceAnimation(AFrameTask anim, Animation3D replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mAnimations.set(index, (Animation3D) anim);
+			mAnimations.set(index, replace);
 		} else {
 			mAnimations.set(mAnimations.indexOf(replace), (Animation3D) anim);
 		}
@@ -1059,7 +1059,7 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private void internalReplaceCamera(AFrameTask camera, Camera replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mCameras.set(index, (Camera) camera);
+			mCameras.set(index, replace);
 		} else {
 			mCameras.set(mCameras.indexOf(replace), (Camera) camera);
 		}
@@ -1151,7 +1151,7 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private void internalReplaceChild(AFrameTask child, BaseObject3D replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mChildren.set(index, (BaseObject3D) child);
+			mChildren.set(index, replace);
 		} else {
 			mChildren.set(mChildren.indexOf(replace), (BaseObject3D) child);
 		}
@@ -1243,7 +1243,7 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private void internalReplacePlugin(AFrameTask plugin, IRendererPlugin replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mPlugins.set(index, (IRendererPlugin) plugin);
+			mPlugins.set(index, replace);
 		} else {
 			mPlugins.set(mPlugins.indexOf(replace), (IRendererPlugin) plugin);
 		}
