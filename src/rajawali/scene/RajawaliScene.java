@@ -21,6 +21,7 @@ import rajawali.renderer.RajawaliRenderer;
 import rajawali.renderer.plugins.IRendererPlugin;
 import rajawali.scenegraph.IGraphNode;
 import rajawali.scenegraph.IGraphNode.GRAPH_TYPE;
+import rajawali.scenegraph.IGraphNodeMember;
 import rajawali.scenegraph.Octree;
 import rajawali.util.ObjectColorPicker.ColorPickerInfo;
 import android.content.Context;
@@ -1063,6 +1064,7 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mCameras.set(mCameras.indexOf(replace), (Camera) camera);
 		}
+		//TODO: Handle camera replacement in scenegraph
 	}
 	
 	/**
@@ -1080,6 +1082,9 @@ public class RajawaliScene extends AFrameTask {
 			mCameras.add(camera);
 		} else {
 			mCameras.add(index, camera);
+		}
+		if (mSceneGraph != null) {
+			//mSceneGraph.addObject(camera); //TODO: Uncomment
 		}
 	}
 	
@@ -1107,6 +1112,9 @@ public class RajawaliScene extends AFrameTask {
 			//switch to the new 0 index camera.
 			mCamera = mCameras.get(0);
 		}
+		if (mSceneGraph != null) {
+			//mSceneGraph.removeObject(camera); //TODO: Uncomment
+		}
 	}
 	
 	/**
@@ -1115,6 +1123,9 @@ public class RajawaliScene extends AFrameTask {
 	 * Note that this will re-add the current camera.
 	 */
 	private void internalClearCameras() {
+		if (mSceneGraph != null) {
+			//mSceneGraph.removeAll(mCameras); //TODO: Uncomment
+		}
 		mCameras.clear();
 		mCameras.add(mCamera);
 	}	
@@ -1155,6 +1166,7 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mChildren.set(mChildren.indexOf(replace), (BaseObject3D) child);
 		}
+		//TODO: Handle child replacement in scene graph
 	}
 	
 	/**
@@ -1173,6 +1185,9 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mChildren.add(index, child);
 		}
+		if (mSceneGraph != null) {
+			mSceneGraph.addObject(child);
+		}
 	}
 	
 	/**
@@ -1190,6 +1205,9 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mChildren.remove(index);
 		}
+		if (mSceneGraph != null) {
+			mSceneGraph.removeObject(child);
+		}
 	}
 	
 	/**
@@ -1197,6 +1215,9 @@ public class RajawaliScene extends AFrameTask {
 	 * Should only be called through {@link #handleRemoveAllTask(AFrameTask)}
 	 */
 	private void internalClearChildren() {
+		if (mSceneGraph != null) {
+			mSceneGraph.removeObjects(new ArrayList<IGraphNodeMember>(mChildren));
+		}
 		mChildren.clear();
 	}
 	
@@ -1247,6 +1268,7 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mPlugins.set(mPlugins.indexOf(replace), (IRendererPlugin) plugin);
 		}
+		//TODO: Handle replace plugins
 	}
 	
 	/**

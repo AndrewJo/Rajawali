@@ -1,5 +1,7 @@
 package rajawali.scenegraph;
 
+import java.util.Collection;
+
 import rajawali.Camera;
 import rajawali.bounds.IBoundingVolume;
 import rajawali.scene.RajawaliScene;
@@ -33,6 +35,15 @@ public interface IGraphNode {
 	public void addObject(IGraphNodeMember object);
 	
 	/**
+	 * Adds a collection of objects to the scene graph. Implementations
+	 * do not need to support online adustment of the scene graph, and
+	 * should clearly document what their add behavior is.
+	 * 
+	 * @param objects Collection of {@link IGraphNodeMember} objects to add.
+	 */
+	public void addObjects(Collection<IGraphNodeMember> objects);
+	
+	/**
 	 * Removes an object from the scene graph. Implementations do not
 	 * need to support online adjustment of the scene graph, and should
 	 * clearly document what their removal behavior is. 
@@ -40,6 +51,15 @@ public interface IGraphNode {
 	 * @param object BaseObject3D to be removed from the graph.
 	 */
 	public void removeObject(IGraphNodeMember object);
+	
+	/**
+	 * Removes a collection of objects from the scene graph. Implementations do not
+	 * need to support online adjustment of the scene graph, and should
+	 * clearly document what thier removal behavior is.
+	 * 
+	 * @param objects Collection of {@link IGraphNodeMember} objects to remove.
+	 */
+	public void removeObjects(Collection<IGraphNodeMember> objects);
 	
 	/**
 	 * This should be called whenever an object has moved in the scene.

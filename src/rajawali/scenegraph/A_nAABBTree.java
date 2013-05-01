@@ -1,6 +1,7 @@
 package rajawali.scenegraph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import android.opengl.Matrix;
@@ -611,6 +612,15 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			internalAddObject(object);
 		}
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#addObjects(java.util.Collection)
+	 */
+	public void addObjects(Collection<IGraphNodeMember> objects) {
+		// TODO Auto-generated method stub
+		
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -638,6 +648,15 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 		if (mParent == null && mSplit) shrink(); //Try to shrink the tree
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#removeObjects(java.util.Collection)
+	 */
+	public void removeObjects(Collection<IGraphNodeMember> objects) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	/*
