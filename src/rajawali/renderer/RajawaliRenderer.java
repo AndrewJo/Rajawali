@@ -15,7 +15,6 @@ import javax.microedition.khronos.opengles.GL10;
 import rajawali.BaseObject3D;
 import rajawali.Camera;
 import rajawali.animation.Animation3D;
-import rajawali.filters.IPostProcessingFilter;
 import rajawali.materials.AMaterial;
 import rajawali.materials.TextureManager;
 import rajawali.math.Number3D;
@@ -39,31 +38,29 @@ import android.view.WindowManager;
 public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	protected final int GL_COVERAGE_BUFFER_BIT_NV = 0x8000;
 
-	protected Context mContext;
+	protected Context mContext; //Context the renderer is running in
+	protected SharedPreferences preferences; //Shared preferences for this app
 
-	protected float mEyeZ = 4.0f;
-	protected float mFrameRate;
-	protected double mLastMeasuredFPS;
-	protected FPSUpdateListener mFPSUpdateListener;
-
-	protected SharedPreferences preferences;
-
-	protected int mViewportWidth, mViewportHeight;
-	protected WallpaperService.Engine mWallpaperEngine;
-	protected GLSurfaceView mSurfaceView;
-	protected Timer mTimer;
-	protected int mFrameCount;
-	private long mStartTime = System.nanoTime();
-	private long mLastRender;
-
-	protected float[] mVMatrix = new float[16];
-	protected float[] mPMatrix = new float[16];
-	protected boolean mEnableDepthBuffer = true;
-	protected static boolean mFogEnabled;
-	protected static int mMaxLights = 1;
-
-	protected TextureManager mTextureManager;
-	protected PostProcessingRenderer mPostProcessingRenderer;
+	protected int mViewportWidth, mViewportHeight; //Height and width of GL viewport
+	protected WallpaperService.Engine mWallpaperEngine; //Concrete wallpaper instance
+	protected GLSurfaceView mSurfaceView; //The rendering surface
+	
+	protected TextureManager mTextureManager; //Texture manager for ALL textures across ALL scenes.
+	
+	protected Timer mTimer; //Timer used to schedule drawing
+	protected float mFrameRate; //Target frame rate to render at
+	protected int mFrameCount; //Used for determining FPS
+	private long mStartTime = System.nanoTime(); //Used for determining FPS
+	protected double mLastMeasuredFPS; //Last measured FPS value
+	protected FPSUpdateListener mFPSUpdateListener; //Listener to notify of new FPS values.
+	private long mLastRender; //Time of last rendering. Used for animation delta time
+	
+	protected float[] mVMatrix = new float[16]; //The OpenGL view matrix
+	protected float[] mPMatrix = new float[16]; //The OpenGL projection matrix
+	
+	protected boolean mEnableDepthBuffer = true; //Do we use the depth buffer?
+	protected static boolean mFogEnabled; //Is camera fog enabled?
+	protected static int mMaxLights = 1; //How many lights max?
 
 	/**
 	 * Scene caching stores all textures and relevant OpenGL-specific
@@ -71,27 +68,32 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * The context typically needs to be restored when the application
 	 * is re-activated or when a live wallpaper is rotated. 
 	 */
-	private boolean mSceneCachingEnabled;
-	protected boolean mSceneInitialized;
-
-	protected List<IPostProcessingFilter> mFilters;
+	private boolean mSceneCachingEnabled; //This applies to all scenes
+	protected boolean mSceneInitialized; //This applies to all scenes
 
 	public static boolean supportsUIntBuffers = false;
 
 	/**
-	 * Frame task queue. Adding, removing or replacing members
-	 * such as children, cameras, plugins, etc is now prohibited
+	 * Frame task queue. Adding, removing or replacing scenes is prohibited
 	 * outside the use of this queue. The render thread will automatically
 	 * handle the necessary operations at an appropriate time, ensuring 
 	 * thread safety and general correct operation.
 	 * 
-	 * Guarded by itself
+	 * Guarded by {@link #mSceneQueue}
 	 */
 	private LinkedList<AFrameTask> mSceneQueue;
-	private List<RajawaliScene> mScenes;
+	
+	private List<RajawaliScene> mScenes; //List of all scenes this renderer is aware of.
+	
+	/**
+	 * The scene currently being displayed.
+	 * 
+	 * Guarded by {@link #mNextSceneLock}
+	 */
 	private RajawaliScene mCurrentScene;
-	private RajawaliScene mNextScene;
-	private final Object mNextSceneLock = new Object();
+	
+	private RajawaliScene mNextScene; //The scene which the renderer should switch to on the next frame.
+	private final Object mNextSceneLock = new Object(); //Scene switching lock
 	
 	public RajawaliRenderer(Context context) {
 		RajLog.i("IMPORTANT: Rajawali's coordinate system has changed. It now reflects");
@@ -101,8 +103,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		AMaterial.setLoaderContext(context);
 		
 		mContext = context;
-		mFilters = Collections.synchronizedList(new CopyOnWriteArrayList<IPostProcessingFilter>());
-		mPostProcessingRenderer = new PostProcessingRenderer(this);
 		mFrameRate = getRefreshRate();
 		mScenes = Collections.synchronizedList(new CopyOnWriteArrayList<RajawaliScene>());
 		mSceneQueue = new LinkedList<AFrameTask>();
@@ -304,9 +304,12 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		return mCurrentScene.removeChild(child);
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see android.opengl.GLSurfaceView.Renderer#onDrawFrame(javax.microedition.khronos.opengles.GL10)
+	 */
 	public void onDrawFrame(GL10 glUnused) {
-		performFrameTasks();
-		
+		performFrameTasks(); //Execute any pending frame tasks
 		synchronized (mNextSceneLock) { 
 			//Check if we need to switch the scene, and if so, do it.
 			if (mNextScene != null) {
@@ -316,7 +319,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 			}
 		}
 		
-		render();
+		render(); //Render the frame
 		++mFrameCount;
 		if (mFrameCount % 50 == 0) {
 			long now = System.nanoTime();
@@ -329,10 +332,13 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 			mStartTime = now;
 
 			if(mFPSUpdateListener != null)
-				mFPSUpdateListener.onFPSUpdate(mLastMeasuredFPS);
+				mFPSUpdateListener.onFPSUpdate(mLastMeasuredFPS); //Update the FPS listener
 		}
 	}
 
+	/**
+	 * Called by {@link #onDrawFrame(GL10)} to render the next frame.
+	 */
 	private void render() {
 		final double deltaTime = (SystemClock.elapsedRealtime() - mLastRender) / 1000d;
 		mLastRender = SystemClock.elapsedRealtime();
@@ -386,8 +392,6 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 			mTextureManager.reload();
 			reloadScenes();
 		}
-		if(mPostProcessingRenderer.isInitialized())
-			mPostProcessingRenderer.reload();
 
 		mSceneInitialized = true;
 		startRendering();
