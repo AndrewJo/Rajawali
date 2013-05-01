@@ -116,7 +116,7 @@ public class RajawaliScene extends AFrameTask {
 		mCamera = new Camera();
 		mCamera.setZ(mEyeZ);
 		mCameras = Collections.synchronizedList(new CopyOnWriteArrayList<Camera>());
-		addCamera(mCamera);
+		mCameras.add(mCamera);
 	}
 	
 	public RajawaliScene(RajawaliRenderer renderer, GRAPH_TYPE type) {

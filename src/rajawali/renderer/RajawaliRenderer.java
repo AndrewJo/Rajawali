@@ -110,7 +110,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mSceneInitialized = false;
 		
 		RajawaliScene defaultScene = new RajawaliScene(this);
-		queueAddTask(defaultScene);
+		mScenes.add(defaultScene);
 		mCurrentScene = defaultScene;
 	}
 	
@@ -969,8 +969,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mFogEnabled = enabled;
 		synchronized (mScenes) {
 			for (int i = 0, j = mScenes.size(); i < j; ++i) {
-				ArrayList<Camera> cams = mScenes.get(i).getCamerasCopy();
-				for (int n = 0, k = mScenes.size(); n < k; ++n) {
+				List<Camera> cams = mScenes.get(i).getCamerasCopy();
+				for (int n = 0, k = cams.size(); n < k; ++n) {
 					cams.get(n).setFogEnabled(enabled);
 				}
 			}
