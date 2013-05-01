@@ -253,71 +253,118 @@ public class RajawaliScene extends AFrameTask {
 			mPlugins.get(i).render();
 	}
 	
-	private void reloadChildren() {
-		for (int i = 0; i < mChildren.size(); i++)
-			mChildren.get(i).reload();
+	/**
+	* Sets the camera currently being used to display the scene.
+	* 
+	* @param mCamera Camera object to display the scene with.
+	*/
+	public void setCamera(Camera camera) {
+		synchronized (mNextCameraLock) {
+			mNextCamera = camera;
+		}
 	}
 
-	private void reloadPlugins() {
-		for (int i = 0, j = mPlugins.size(); i < j; i++)
-			mPlugins.get(i).reload();
+	/**
+	* Sets the camera currently being used to display the scene.
+	* 
+	* @param camera Index of the camera to use.
+	*/
+	public void setCamera(int camera) {
+		setCamera(mCameras.get(camera));
+	}
+
+	/**
+	* Fetches the camera currently being used to display the scene.
+	* Note that the camera is not thread safe so this should be used
+	* with extreme caution.
+	* 
+	* @return Camera object currently used for the scene.
+	* @see {@link RajawaliRenderer#mCamera}
+	*/
+	public Camera getCamera() {
+		return this.mCamera;
+	}
+
+	/**
+	* Fetches the specified camera. 
+	* 
+	* @param camera Index of the camera to fetch.
+	* @return Camera which was retrieved.
+	*/
+	public Camera getCamera(int camera) {
+		return mCameras.get(camera);
+	}
+
+	/**
+	* Adds a camera to the renderer.
+	* 
+	* @param camera Camera object to add.
+	* @return int The index the new camera was added at.
+	*/
+	public int addCamera(Camera camera) {
+		mCameras.add(camera);
+		return (mCameras.size() - 1);
+	}
+
+	/**
+	* Replaces a camera in the renderer at the specified location
+	* in the list. This does not validate the index, so if it is not
+	* contained in the list already, an exception will be thrown.
+	* 
+	* @param camera Camera object to add.
+	* @param location Integer index of the camera to replace.
+	*/
+	public void replaceCamera(Camera camera, int location) {
+		mCameras.set(location, camera);
+	}
+
+	/**
+	* Adds a camera with the option to switch to it immediately
+	* 
+	* @param camera The Camera to add.
+	* @param useNow Boolean indicating if we should switch to this
+	* camera immediately.
+	* @return int The index the new camera was added at.
+	*/
+	public int addCamera(Camera camera, boolean useNow) {
+		int index = addCamera(camera);
+		if (useNow) setCamera(camera);
+		return index;
+	}
+
+	/**
+	* Replaces a camera at the specified index with an option to switch to it
+	* immediately.
+	* 
+	* @param camera The Camera to add.
+	* @param location The index of the camera to replace.
+	* @param useNow Boolean indicating if we should switch to this
+	* camera immediately.
+	*/
+	public void replaceCamera(Camera camera, int location, boolean useNow) {
+		replaceCamera(camera, location);
+		if (useNow) setCamera(camera);
 	}
 	
 	/**
-	 * Scene construction should happen here, not in onSurfaceCreated()
+	 * Requests the addition of a child to the scene. The child
+	 * will be added to the end of the list. 
+	 * 
+	 * @param child {@link BaseObject3D} child to be added.
+	 * @return True if the child was successfully queued for addition.
 	 */
-	protected void initScene() {
-
-	}
-
-	public void destroyScene() { //TODO FIX
-		for (int i = 0; i < mChildren.size(); i++)
-			mChildren.get(i).destroy();
-		mChildren.clear();
-		for (int i = 0, j = mPlugins.size(); i < j; i++)
-			mPlugins.get(i).destroy();
-		mPlugins.clear();
-	}
-	
-	public void setBackgroundColor(float red, float green, float blue, float alpha) {
-		mRed = red;
-		mGreen = green;
-		mBlue = blue;
-		mAlpha = alpha;
-	}
-	
-	public void setBackgroundColor(int color) {
-		setBackgroundColor(Color.red(color) / 255f, Color.green(color) / 255f, Color.blue(color) / 255f, Color.alpha(color) / 255f);
-	}
-	
-	public int getBackgroundColor() {
-		return Color.argb((int) (mAlpha*255f), (int) (mRed*255f), (int) (mGreen*255f), (int) (mBlue*255f));
-	}
-	
-	public void updateProjectionMatrix(int width, int height) {
-		mCamera.setProjectionMatrix(width, height);
-	}
-	
-	public void setUsesCoverageAa(boolean value) {
-		mUsesCoverageAa = value;
-	}
-
-	public int getNumTriangles() {
-		int triangleCount = 0;
-		ArrayList<BaseObject3D> children = getChildrenCopy();
-		for (int i = 0, j = children.size(); i < j; i++) {
-			if (children.get(i).getGeometry() != null && children.get(i).getGeometry().getVertices() != null && children.get(i).isVisible())
-				triangleCount += children.get(i).getGeometry().getVertices().limit() / 9;
-		}
-		return triangleCount;
-	}
-	
-	public boolean addCamera(Camera camera) {
-		return queueAddTask(camera);
-	}
-	
 	public boolean addChild(BaseObject3D child) {
 		return queueAddTask(child);
+	}
+	
+	/**
+	 * Requests the removal of a child from the scene.
+	 * 
+	 * @param child {@link BaseObject3D} child to be removed.
+	 * @return True if the child was successfully queued for removal.
+	 */
+	public boolean removeChild(BaseObject3D child) {
+		return queueRemoveTask(child);
 	}
 	
 	/**
@@ -342,47 +389,10 @@ public class RajawaliScene extends AFrameTask {
 	}
 	
 	/**
-	* Sets the camera currently being used to display the scene.
-	* 
-	* @param mCamera Camera object to display the scene with.
-	*/
-	public void setCamera(Camera camera) {
-		synchronized (mNextCameraLock) {
-			mNextCamera = camera;
-		}
-	}
-	  
-	/**
-	* Sets the camera currently being used to display the scene.
-	* 
-	* @param camera Index of the camera to use.
-	*/
-	public void setCamera(int camera) {
-		setCamera(mCameras.get(camera));
-	}
-
-	/**
-	* Fetches the camera currently being used to display the scene.
-	* Note that the camera is not thread safe so this should be used
-	* with extreme caution.
-	* 
-	* @return Camera object currently used for the scene.
-	* @see {@link RajawaliRenderer#mCamera}
-	*/
-	public Camera getCamera() {
-		return mCamera;
-	}
-	
-	/**
-	* Fetches the specified camera. 
-	* 
-	* @param camera Index of the camera to fetch.
-	* @return Camera which was retrieved.
-	*/
-	public Camera getCamera(int camera) {
-		return mCameras.get(camera);
-	}
-	
+	 * Creates a skybox with the specified single texture.
+	 * 
+	 * @param resourceId int Resouce id of the skybox texture.
+	 */
 	public void setSkybox(int resourceId) {
 		mCamera.setFarPlane(1000);
 		mSkybox = new Cube(700, true, false);
@@ -394,6 +404,16 @@ public class RajawaliScene extends AFrameTask {
 		mSkybox.setMaterial(material);
 	}
 
+	/**
+	 * Creates a skybox with the specified 6 textures. 
+	 * 
+	 * @param front int Resource id for the front face.
+	 * @param right int Resource id for the right face.
+	 * @param back int Resource id for the back face.
+	 * @param left int Resource id for the left face.
+	 * @param up int Resource id for the up face.
+	 * @param down int Resource id for the down face.
+	 */
 	public void setSkybox(int front, int right, int back, int left, int up, int down) {
 		mCamera.setFarPlane(1000);
 		mSkybox = new Cube(700, true);
@@ -412,11 +432,26 @@ public class RajawaliScene extends AFrameTask {
 		mSkybox.setMaterial(mat);
 	}
 	
+	/**
+	 * Updates the sky box textures with a single texture. 
+	 * 
+	 * @param resourceId int the resource id of the new texture.
+	 */
 	public void updateSkybox(int resourceId) {
 		mRenderer.getTextureManager().updateTexture(mSkyboxTextureInfo, BitmapFactory.decodeResource(
 				mRenderer.getContext().getResources(), resourceId));
 	}
 	
+	/**
+	 * Updates the sky box textures with 6 new resource ids. 
+	 * 
+	 * @param front int Resource id for the front face.
+	 * @param right int Resource id for the right face.
+	 * @param back int Resource id for the back face.
+	 * @param left int Resource id for the left face.
+	 * @param up int Resource id for the up face.
+	 * @param down int Resource id for the down face.
+	 */
 	public void updateSkybox(int front, int right, int back, int left, int up, int down) {
 		Context context = mRenderer.getContext();
 		Bitmap[] textures = new Bitmap[6];
@@ -429,11 +464,6 @@ public class RajawaliScene extends AFrameTask {
 
 		mRenderer.getTextureManager().updateCubemapTextures(mSkyboxTextureInfo, textures);
 	}
-	
-	
-	//-----------------------------------------------------------
-	// TASK QUEUE METHODS
-	//-----------------------------------------------------------
 	
 	/**
 	 * Queue an addition task. The added object will be placed
@@ -496,28 +526,28 @@ public class RajawaliScene extends AFrameTask {
 	 * the end of the list if index is out of range.
 	 * 
 	 * @param index Integer index of the object to replace.
-	 * @param replace {@link AFrameTask} the object to be replaced.
+	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueReplaceTask(int index, AFrameTask replace) {
-		EmptyTask task = new EmptyTask(replace.getFrameTaskType());
+	private boolean queueReplaceTask(int index, AFrameTask replacement) {
+		EmptyTask task = new EmptyTask(replacement.getFrameTaskType());
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(index);
-		task.setReplaceObject(replace);
+		task.setNewObject(replacement);
 		return addTaskToQueue(task);
 	}
 	
 	/**
 	 * Queue a replacement task to replace the specified object with the new one.
 	 * 
-	 * @param task {@link AFrameTask} the new object.
-	 * @param replace {@link AFrameTask} the object to be replaced.
+	 * @param task {@link AFrameTask} the object to replace.
+	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	public boolean queueReplaceTask(AFrameTask task, AFrameTask replace) {
+	private boolean queueReplaceTask(AFrameTask task, AFrameTask replacement) {
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
-		task.setReplaceObject(replace);
+		task.setNewObject(replacement);
 		return addTaskToQueue(task);
 	}
 	
@@ -618,22 +648,24 @@ public class RajawaliScene extends AFrameTask {
 		AFrameTask.TYPE type = task.getFrameTaskType();
 		switch (type) {
 		case ANIMATION:
-			internalReplaceAnimation((Animation3D) task, (Animation3D) task.getReplaceObject(), task.getIndex());
+			internalReplaceAnimation(task, (Animation3D) task.getNewObject(), task.getIndex());
 			break;
 		case CAMERA:
-			internalReplaceCamera((Camera) task, (Camera) task.getReplaceObject(), task.getIndex());
+			internalReplaceCamera(task, (Camera) task.getNewObject(), task.getIndex());
 			break;
 		case LIGHT:
 			//TODO: Handle light replacement
 			break;
 		case OBJECT3D:
-			internalReplaceChild((BaseObject3D) task, (BaseObject3D) task.getReplaceObject(), task.getIndex());
+			internalReplaceChild(task, (BaseObject3D) task.getNewObject(), task.getIndex());
 			break;
 		case PLUGIN:
-			internalReplacePlugin((IRendererPlugin) task, (IRendererPlugin) task.getReplaceObject(), task.getIndex());
+			internalReplacePlugin(task, (IRendererPlugin) task.getNewObject(), task.getIndex());
 			break;
 		case TEXTURE:
 			//TODO: Handle texture replacement
+			break;
+		default:
 			break;
 		}
 	}
@@ -664,6 +696,8 @@ public class RajawaliScene extends AFrameTask {
 		case TEXTURE:
 			//TODO: Handle texture addition
 			break;
+		default:
+			break;
 		}
 	}
 	
@@ -692,6 +726,8 @@ public class RajawaliScene extends AFrameTask {
 			break;
 		case TEXTURE:
 			//TODO: Handle texture removal
+			break;
+		default:
 			break;
 		}
 	}
@@ -733,6 +769,8 @@ public class RajawaliScene extends AFrameTask {
 			break;
 		case TEXTURE:
 			//TODO: Handle texture remove all
+			break;
+		default:
 			break;
 		}
 	}
@@ -798,6 +836,8 @@ public class RajawaliScene extends AFrameTask {
 		case TEXTURE:
 			//TODO: Handle texture add all
 			break;
+		default:
+			break;
 		}
 	}
 	
@@ -806,15 +846,15 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleAddTask(AFrameTask)}
 	 * 
-	 * @param anim {@link Animation3D} The new animation for the specified index.
-	 * @param replace {@link Animation3D} The animation to be replaced. Can be null if index is used.
+	 * @param anim {@link AFrameTask} The new animation for the specified index.
+	 * @param replace {@link Animation3D} The animation replacing the old animation.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
-	private void internalReplaceAnimation(Animation3D anim, Animation3D replace, int index) {
+	private void internalReplaceAnimation(AFrameTask anim, Animation3D replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mAnimations.set(index, anim);
+			mAnimations.set(index, (Animation3D) anim);
 		} else {
-			mAnimations.set(mAnimations.indexOf(replace), anim);
+			mAnimations.set(mAnimations.indexOf(replace), (Animation3D) anim);
 		}
 	}
 	
@@ -866,15 +906,15 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleReplaceTask(AFrameTask)}
 	 * 
-	 * @param camera {@link Camera} The new camera. for the specified index.
-	 * @param replace {@link Camera} The camera to be replaced. Can be null if index is used.
+	 * @param camera {@link Camera} The new camera for the specified index.
+	 * @param replace {@link Camera} The camera replacing the old camera.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
-	private void internalReplaceCamera(Camera camera, Camera replace, int index) {
+	private void internalReplaceCamera(AFrameTask camera, Camera replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mCameras.set(index, camera);
+			mCameras.set(index, (Camera) camera);
 		} else {
-			mCameras.set(mCameras.indexOf(replace), camera);
+			mCameras.set(mCameras.indexOf(replace), (Camera) camera);
 		}
 	}
 	
@@ -958,15 +998,15 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleReplaceTask(AFrameTask)}
 	 * 
-	 * @param child {@link BaseObject3D} The new child. for the specified index.
-	 * @param replace {@link BaseObject3D} The child to be replaced. Can be null if index is used.
+	 * @param child {@link BaseObject3D} The new child for the specified index.
+	 * @param replace {@link BaseObject3D} The child replacing the old child.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
-	private void internalReplaceChild(BaseObject3D child, BaseObject3D replace, int index) {
+	private void internalReplaceChild(AFrameTask child, BaseObject3D replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mChildren.set(index, child);
+			mChildren.set(index, (BaseObject3D) child);
 		} else {
-			mChildren.set(mChildren.indexOf(replace), child);
+			mChildren.set(mChildren.indexOf(replace), (BaseObject3D) child);
 		}
 	}
 	
@@ -1050,15 +1090,15 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleReplaceTask(AFrameTask)}
 	 * 
-	 * @param plugin {@link IRendererPlugin} The new plugin. for the specified index.
-	 * @param replace {@link IRendererPlugin} The plugin to be replaced. Can be null if index is used.
+	 * @param plugin {@link IRendererPlugin} The new plugin for the specified index.
+	 * @param replace {@link IRendererPlugin} The plugin replacing the old plugin.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
-	private void internalReplacePlugin(IRendererPlugin plugin, IRendererPlugin replace, int index) {
+	private void internalReplacePlugin(AFrameTask plugin, IRendererPlugin replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mPlugins.set(index, plugin);
+			mPlugins.set(index, (IRendererPlugin) plugin);
 		} else {
-			mPlugins.set(mPlugins.indexOf(replace), plugin);
+			mPlugins.set(mPlugins.indexOf(replace), (IRendererPlugin) plugin);
 		}
 	}
 	
@@ -1135,6 +1175,70 @@ public class RajawaliScene extends AFrameTask {
 	public int getNumPlugins() {
 		//Thread safety deferred to the List
 		return mPlugins.size();
+	}
+	
+	private void reloadChildren() {
+		for (int i = 0; i < mChildren.size(); i++)
+			mChildren.get(i).reload();
+	}
+
+	private void reloadPlugins() {
+		for (int i = 0, j = mPlugins.size(); i < j; i++)
+			mPlugins.get(i).reload();
+	}
+	
+	/**
+	 * Scene construction should happen here, not in onSurfaceCreated()
+	 */
+	protected void initScene() {
+
+	}
+
+	public void destroyScene() { //TODO FIX
+		for (int i = 0; i < mChildren.size(); i++)
+			mChildren.get(i).destroy();
+		mChildren.clear();
+		for (int i = 0, j = mPlugins.size(); i < j; i++)
+			mPlugins.get(i).destroy();
+		mPlugins.clear();
+	}
+	
+	public void setBackgroundColor(float red, float green, float blue, float alpha) {
+		mRed = red;
+		mGreen = green;
+		mBlue = blue;
+		mAlpha = alpha;
+	}
+	
+	public void setBackgroundColor(int color) {
+		setBackgroundColor(Color.red(color) / 255f, Color.green(color) / 255f, Color.blue(color) / 255f, Color.alpha(color) / 255f);
+	}
+	
+	public int getBackgroundColor() {
+		return Color.argb((int) (mAlpha*255f), (int) (mRed*255f), (int) (mGreen*255f), (int) (mBlue*255f));
+	}
+	
+	public void updateProjectionMatrix(int width, int height) {
+		mCamera.setProjectionMatrix(width, height);
+	}
+	
+	public void setUsesCoverageAa(boolean value) {
+		mUsesCoverageAa = value;
+	}
+
+	/**
+	 * Retrieve the number of triangles this scene contains.
+	 * 
+	 * @return int the total triangle count for the scene.
+	 */
+	public int getNumTriangles() {
+		int triangleCount = 0;
+		ArrayList<BaseObject3D> children = getChildrenCopy();
+		for (int i = 0, j = children.size(); i < j; i++) {
+			if (children.get(i).getGeometry() != null && children.get(i).getGeometry().getVertices() != null && children.get(i).isVisible())
+				triangleCount += children.get(i).getGeometry().getVertices().limit() / 9;
+		}
+		return triangleCount;
 	}
 
 	@Override

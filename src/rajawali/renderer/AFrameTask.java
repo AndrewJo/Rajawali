@@ -39,7 +39,7 @@ public abstract class AFrameTask {
 	
 	private AFrameTask.TASK mFrameTask = AFrameTask.TASK.NONE; //The task to perform
 	private int mFrameTaskIndex = UNUSED_INDEX; //The index to replace, if relevant
-	private AFrameTask mReplaceObject; //The AFrameTask object to replace if used
+	private AFrameTask mNewObject; //The AFrameTask object to replace if used
 	
 	public static final int UNUSED_INDEX = -1;
 	
@@ -89,16 +89,16 @@ public abstract class AFrameTask {
 	 * 
 	 * @return {@link AFrameTask} which needs to be replaced.
 	 */
-	public AFrameTask getReplaceObject() {
-		return mReplaceObject;
+	public AFrameTask getNewObject() {
+		return mNewObject;
 	}
 	
 	/**
-	 * Sets the target for replacement.
+	 * Sets the replacement.
 	 * 
-	 * @param object {@link AFrameTask} object to be replaced with this one.
+	 * @param object {@link AFrameTask} object which will replace this one.
 	 */
-	public void setReplaceObject(AFrameTask object) {
-		mReplaceObject = object;
+	public void setNewObject(AFrameTask object) {
+		mNewObject = object;
 	}
 }

@@ -90,8 +90,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	private LinkedList<AFrameTask> mSceneQueue;
 	private List<RajawaliScene> mScenes;
 	private RajawaliScene mCurrentScene;
-	
-	protected Camera mCurrentCamera;
+	private RajawaliScene mNextScene;
+	private final Object mNextSceneLock = new Object();
 	
 	public RajawaliRenderer(Context context) {
 		RajLog.i("IMPORTANT: Rajawali's coordinate system has changed. It now reflects");
@@ -112,7 +112,98 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		RajawaliScene defaultScene = new RajawaliScene(this);
 		queueAddTask(defaultScene);
 		mCurrentScene = defaultScene;
-		mCurrentCamera = mCurrentScene.getCamera();
+	}
+	
+	/**
+	* Sets the {@link RajawaliScene} currently being displayed.
+	* 
+	* @param scene {@link RajawaliScene} object to display.
+	*/
+	public void setScene(RajawaliScene scene) {
+		synchronized (mNextSceneLock) {
+			mNextScene = scene;
+		}
+	}
+
+	/**
+	* Sets the {@link RajawaliScene} currently being displayed.
+	* 
+	* @param scene Index of the {@link RajawaliScene} to use.
+	*/
+	public void setScene(int scene) {
+		setScene(mScenes.get(scene));
+	}
+	
+	/**
+	* Fetches the {@link RajawaliScene} currently being being displayed.
+	* Note that the scene is not thread safe so this should be used
+	* with extreme caution.
+	* 
+	* @return {@link RajawaliScene} object currently used for the scene.
+	* @see {@link RajawaliRenderer#mCurrentScene}
+	*/
+	public RajawaliScene getCurrentScene() {
+		return mCurrentScene;
+	}
+
+	/**
+	* Fetches the specified scene. 
+	* 
+	* @param scene Index of the {@link RajawaliScene} to fetch.
+	* @return {@link RajawaliScene} which was retrieved.
+	*/
+	public RajawaliScene getScene(int scene) {
+		return mScenes.get(scene);
+	}
+
+	/**
+	* Adds a {@link RajawaliScene} to the renderer.
+	* 
+	* @param scene {@link RajawaliScene} object to add.
+	* @return boolean True if this addition was successfully queued. 
+	*/
+	public boolean addScene(RajawaliScene scene) {
+		return queueAddTask(scene);
+	}
+
+	/**
+	* Replaces a {@link RajawaliScene} in the renderer at the specified location
+	* in the list. This does not validate the index, so if it is not
+	* contained in the list already, an exception will be thrown.
+	* 
+	* @param scene {@link RajawaliScene} object to add.
+	* @param location Integer index of the {@link RajawaliScene} to replace.
+	*/
+	public void replaceScene(RajawaliScene scene, int location) {
+		queueReplaceTask(location, scene);
+	}
+
+	/**
+	* Adds a {@link RajawaliScene} with the option to switch to it immediately
+	* 
+	* @param scene The {@link RajawaliScene} to add.
+	* @param useNow boolean indicating if we should switch to this
+	* {@link RajawaliScene} immediately.
+	* @return boolean True if the addition task was successfully queued.
+	*/
+	public boolean addScene(RajawaliScene scene, boolean useNow) {
+		boolean success = addScene(scene);
+		if (useNow) setScene(scene);
+		return success;
+	}
+
+	/**
+	* Replaces a {@link RajawaliScene} at the specified index with an option to switch to it
+	* immediately.
+	* 
+	* @param scene The {@link RajawaliScene} to add.
+	* @param location The index of the scene to replace.
+	* @param useNow boolean indicating if we should switch to this
+	* scene immediately.
+	*/
+	public void replaceScene(RajawaliScene scene, int location, boolean useNow) {
+		replaceScene(scene, location);
+		if (useNow) setScene(scene);
 	}
 	
 	/**
@@ -136,18 +227,30 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		return mCurrentScene.unregisterAnimation(anim);
 	}
 	
+	public Camera getCurrentCamera() {
+		return mCurrentScene.getCamera();
+	}
+	
 	public boolean addChild(BaseObject3D child) {
 		return mCurrentScene.addChild(child);
 	}
 	
-	
-	
-	public RajawaliScene getCurrentScene() {
-		return mCurrentScene;
+	public boolean removeChild(BaseObject3D child) {
+		return mCurrentScene.removeChild(child);
 	}
 	
 	public void onDrawFrame(GL10 glUnused) {
 		performFrameTasks();
+		
+		synchronized (mNextSceneLock) { 
+			//Check if we need to switch the scene, and if so, do it.
+			if (mNextScene != null) {
+				mCurrentScene = mNextScene;
+				mNextScene = null;
+				mCurrentScene.getCamera().setProjectionMatrix(mViewportWidth, mViewportHeight);
+			}
+		}
+		
 		render();
 		++mFrameCount;
 		if (mFrameCount % 50 == 0) {
@@ -444,8 +547,8 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	private void handleReplaceTask(AFrameTask task) {
 		AFrameTask.TYPE type = task.getFrameTaskType();
 		switch (type) {
-		case ANIMATION:
-			internalReplaceScene((RajawaliScene) task, (RajawaliScene) task.getReplaceObject(), task.getIndex());
+		case SCENE:
+			internalReplaceScene(task, (RajawaliScene) task.getNewObject(), task.getIndex());
 			break;
 		default:
 			break;
@@ -460,7 +563,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	private void handleAddTask(AFrameTask task) {
 		AFrameTask.TYPE type = task.getFrameTaskType();
 		switch (type) {
-		case ANIMATION:
+		case SCENE:
 			internalAddScene((RajawaliScene) task, task.getIndex());
 			break;
 		default:
@@ -544,15 +647,15 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleAddTask(AFrameTask)}
 	 * 
-	 * @param scene {@link RajawaliScene} The new scene for the specified index.
-	 * @param replace {@link RajawaliScene} The animation to be replaced. Can be null if index is used.
+	 * @param scene {@link AFrameTask} The new scene for the specified index.
+	 * @param replace {@link RajawaliScene} The scene replacing the old scene.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
-	private void internalReplaceScene(RajawaliScene scene, RajawaliScene replace, int index) {
+	private void internalReplaceScene(AFrameTask scene, RajawaliScene replace, int index) {
 		if (index != AFrameTask.UNUSED_INDEX) {
-			mScenes.set(index, scene);
+			mScenes.set(index, (RajawaliScene) scene);
 		} else {
-			mScenes.set(mScenes.indexOf(replace), scene);
+			mScenes.set(mScenes.indexOf(replace), (RajawaliScene) scene);
 		}
 	}
 	
@@ -660,28 +763,28 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * the end of the list if index is out of range.
 	 * 
 	 * @param index Integer index of the object to replace.
-	 * @param replace {@link AFrameTask} the object to be replaced.
+	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	private boolean queueReplaceTask(int index, AFrameTask replace) {
-		EmptyTask task = new EmptyTask(replace.getFrameTaskType());
+	private boolean queueReplaceTask(int index, AFrameTask replacement) {
+		EmptyTask task = new EmptyTask(replacement.getFrameTaskType());
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(index);
-		task.setReplaceObject(replace);
+		task.setNewObject(replacement);
 		return addTaskToQueue(task);
 	}
 	
 	/**
 	 * Queue a replacement task to replace the specified object with the new one.
 	 * 
-	 * @param task {@link AFrameTask} the new object.
-	 * @param replace {@link AFrameTask} the object to be replaced.
+	 * @param task {@link AFrameTask} the object to replace.
+	 * @param replacement {@link AFrameTask} the object replacing the old.
 	 * @return boolean True if the task was successfully queued.
 	 */
-	private boolean queueReplaceTask(AFrameTask task, AFrameTask replace) {
+	private boolean queueReplaceTask(AFrameTask task, AFrameTask replacement) {
 		task.setTask(AFrameTask.TASK.REPLACE);
 		task.setIndex(AFrameTask.UNUSED_INDEX);
-		task.setReplaceObject(replace);
+		task.setNewObject(replacement);
 		return addTaskToQueue(task);
 	}
 	
@@ -719,7 +822,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		mPostProcessingRenderer.setFilter(filter);
 	}
 
-	public void accept(INodeVisitor visitor) {
+	public void accept(INodeVisitor visitor) { //TODO: Handle
 		visitor.apply(this);
 		//for (int i = 0; i < mChildren.size(); i++)
 		//	mChildren.get(i).accept(visitor);
