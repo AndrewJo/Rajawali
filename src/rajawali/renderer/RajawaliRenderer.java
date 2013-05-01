@@ -253,7 +253,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	
 	/**
 	* Replaces the specified {@link RajawaliScene} in the renderer with the
-	* new one.
+	* new one. If the scene does not exist, nothing will happen.
 	* 
 	* @param oldScene {@link RajawaliScene} object to be replaced.
 	* @param newScene {@link RajawaliScene} which will replace the old.
@@ -266,29 +266,30 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
-	 * Register an animation to be managed by the renderer. This is optional leaving open the possibility to manage
-	 * updates on Animations in your own implementation. Returns true on success.
+	 * Register an animation to be managed by the current scene. This is optional 
+	 * leaving open the possibility to manage updates on Animations in your own implementation.
 	 * 
-	 * @param anim
-	 * @return
+	 * @param anim {@link Animation3D} to be registered.
+	 * @return boolean True if the registration was queued successfully.
 	 */
 	public boolean registerAnimation(Animation3D anim) {
 		return mCurrentScene.registerAnimation(anim);
 	}
 	
 	/**
-	 * Remove a managed animation. Returns true on success.
+	 * Remove a managed animation. If the animation is not a member of the scene, 
+	 * nothing will happen.
 	 * 
-	 * @param anim
-	 * @return
+	 * @param anim {@link Animation3D} to be unregistered.
+	 * @return boolean True if the unregister was queued successfully.
 	 */
 	public boolean unregisterAnimation(Animation3D anim) {
 		return mCurrentScene.unregisterAnimation(anim);
 	}
 	
 	/**
-	 * Retrieve the current camera in use. This is the camera being
-	 * used by the current scene.
+	 * Retrieve the current {@link Camera} in use. This is the camera being
+	 * used by the current scene. 
 	 * 
 	 * @return {@link Camera} currently in use.
 	 */
@@ -296,10 +297,56 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		return mCurrentScene.getCamera();
 	}
 	
+	/**
+	 * Adds a {@link Camera} to the current scene. 
+	 * 
+	 * @param camera {@link Camera} to add.
+	 * @return boolean True if the addition was queued successfully.
+	 */
+	public boolean addCamera(Camera camera) {
+		return mCurrentScene.addCamera(camera);
+	}
+	
+	/**
+	 * Adds a {@link Camera} to the current scene with an option to switch
+	 * to it immediately.
+	 * 
+	 * @param camera {@link Camera} to add.
+	 * @param useNow boolean True will switch the camera on the next frame.
+	 * @return boolean True if the addition was queued successfully.
+	 */
+	public boolean addCamera(Camera camera, boolean useNow) {
+		return mCurrentScene.addCamera(camera, useNow);
+	}
+	
+	/**
+	 * Removes a {@link Camera} from the current scene.
+	 * If the camera is not a member of the scene, nothing will happen.
+	 * 
+	 * @param camera {@link Camera} to remove.
+	 * @return boolean True if the removal was queued successfully.
+	 */
+	public boolean removeCamera(Camera camera) {
+		return mCurrentScene.removeCamera(camera);
+	}
+	
+	/**
+	 * Adds a {@link BaseObject3D} child to the current scene.
+	 * 
+	 * @param child {@link BaseObject3D} object to be added.
+	 * @return boolean True if the addition was successfully queued.
+	 */
 	public boolean addChild(BaseObject3D child) {
 		return mCurrentScene.addChild(child);
 	}
 	
+	/**
+	 * Removes a {@link BaseObject3D} child from the current scene.
+	 * If the child is not a member of the scene, nothing will happen.
+	 * 
+	 * @param child {@link BaseObject3D} object to be removed.
+	 * @return boolean True if the removal was successfully queued.
+	 */
 	public boolean removeChild(BaseObject3D child) {
 		return mCurrentScene.removeChild(child);
 	}
@@ -397,8 +444,15 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		startRendering();
 	}
 	
+	/**
+	 * Called to reload the scenes. 
+	 */
 	protected void reloadScenes() {
-		
+		synchronized (mScenes) {
+			for (int i = 0, j = mScenes.size(); i < j; ++i) {
+				mScenes.get(i).reload();
+			}
+		}
 	}
 	
 	/**

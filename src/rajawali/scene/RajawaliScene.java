@@ -296,14 +296,23 @@ public class RajawaliScene extends AFrameTask {
 	}
 
 	/**
-	* Adds a camera to the renderer.
+	* Adds a camera to the scene.
 	* 
-	* @param camera Camera object to add.
-	* @return int The index the new camera was added at.
+	* @param camera {@link Camera} object to add.
+	* @return boolean True if the addition was successfully queued.
 	*/
-	public int addCamera(Camera camera) {
-		mCameras.add(camera);
-		return (mCameras.size() - 1);
+	public boolean addCamera(Camera camera) {
+		return queueAddTask(camera);
+	}
+	
+	/**
+	 * Removes a camera from the scene. 
+	 * 
+	 * @param camera {@link Camera} object to remove.
+	 * @return boolean True if the removal was successfully queued.
+	 */
+	public boolean removeCamera(Camera camera) {
+		return queueRemoveTask(camera);
 	}
 
 	/**
@@ -313,9 +322,10 @@ public class RajawaliScene extends AFrameTask {
 	* 
 	* @param camera Camera object to add.
 	* @param location Integer index of the camera to replace.
+	* @param boolean True if the replacement was successfully queued.
 	*/
-	public void replaceCamera(Camera camera, int location) {
-		mCameras.set(location, camera);
+	public boolean replaceCamera(Camera camera, int location) {
+		return queueReplaceTask(location, camera);
 	}
 
 	/**
@@ -324,12 +334,12 @@ public class RajawaliScene extends AFrameTask {
 	* @param camera The Camera to add.
 	* @param useNow Boolean indicating if we should switch to this
 	* camera immediately.
-	* @return int The index the new camera was added at.
+	* @return boolean True if the addition was successfully queued.
 	*/
-	public int addCamera(Camera camera, boolean useNow) {
-		int index = addCamera(camera);
+	public boolean addCamera(Camera camera, boolean useNow) {
+		boolean success = addCamera(camera);
 		if (useNow) setCamera(camera);
-		return index;
+		return success;
 	}
 
 	/**
