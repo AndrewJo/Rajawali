@@ -304,6 +304,17 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
+	 * Replace a {@link Camera} in the current scene with a new one, switching immediately.
+	 * 
+	 * @param oldCamera {@link Camera} the old camera.
+	 * @param newCamera {@link Camera} the new camera.
+	 * @return boolean True if the replacement was queued successfully.
+	 */
+	public boolean replaceAndSwitchCamera(Camera oldCamera, Camera newCamera) {
+		return mCurrentScene.replaceAndSwitchCamera(oldCamera, newCamera);
+	}
+	
+	/**
 	 * Adds a {@link Camera} to the current scene switching
 	 * to it immediately.
 	 * 
