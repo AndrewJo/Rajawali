@@ -401,6 +401,7 @@ public class Geometry3D {
 		if(type == BufferType.SHORT_BUFFER)
 			byteSize = SHORT_SIZE_BYTES;
 		
+		buffer.rewind();
 		GLES20.glBindBuffer(target, handle);
 		Log.w("Buffer", "BufferInfo: " + bufferInfo);
 		Log.w("Buffer", "Buffer limit: " + buffer.limit());
