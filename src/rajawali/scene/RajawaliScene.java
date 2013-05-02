@@ -29,6 +29,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.opengl.GLES20;
+import android.util.Log;
 
 /**
  * This is the container class for scenes in Rajawali.
@@ -756,6 +757,7 @@ public class RajawaliScene extends AFrameTask {
 	 * start of onDrawFrame() prior to render().
 	 */
 	private void performFrameTasks() {
+		Log.v("Rajawali", "Performing frame tasks in scene with queue size: " + mFrameTaskQueue.size());
 		synchronized (mFrameTaskQueue) {
 			//Fetch the first task
 			AFrameTask taskObject = mFrameTaskQueue.poll();
@@ -1180,6 +1182,7 @@ public class RajawaliScene extends AFrameTask {
 	 * @param int index to add the child at. 
 	 */
 	private void internalAddChild(BaseObject3D child, int index) {
+		Log.v("Rajawali", "Internal add task for child: " + child + " and index: " + index);
 		if (index == AFrameTask.UNUSED_INDEX) {
 			mChildren.add(child);
 		} else {
