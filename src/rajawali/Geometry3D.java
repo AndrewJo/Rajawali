@@ -15,6 +15,7 @@ import rajawali.renderer.RajawaliRenderer;
 import rajawali.util.RajLog;
 import android.graphics.Color;
 import android.opengl.GLES20;
+import android.util.Log;
 
 /**
  * This is where the vertex, normal, texture coordinate, color and index data is stored.
@@ -401,6 +402,10 @@ public class Geometry3D {
 			byteSize = SHORT_SIZE_BYTES;
 		
 		GLES20.glBindBuffer(target, handle);
+		Log.w("Buffer", "BufferInfo: " + bufferInfo);
+		Log.w("Buffer", "Buffer limit: " + buffer.limit());
+		Log.w("Buffer", "Buffer limit*byteSize: " + buffer.limit()*byteSize);
+		Log.w("Buffer", "Buffer remaining: " + buffer.remaining());
 		GLES20.glBufferData(target, buffer.limit() * byteSize, buffer, usage);
 		GLES20.glBindBuffer(target, 0);
 		
