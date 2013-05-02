@@ -786,6 +786,22 @@ public abstract class A_nAABBTree extends BoundingBox implements IGraphNode {
 			}
 		}
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#getSceneMinBound()
+	 */
+	public Number3D getSceneMinBound() {
+		return getTransformedMin();
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see rajawali.scenegraph.IGraphNode#getSceneMaxBound()
+	 */
+	public Number3D getSceneMaxBound() {
+		return getTransformedMax();
+	}
 
 	/*
 	 * (non-Javadoc)

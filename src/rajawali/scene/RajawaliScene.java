@@ -13,6 +13,7 @@ import rajawali.animation.Animation3D;
 import rajawali.materials.SimpleMaterial;
 import rajawali.materials.SkyboxMaterial;
 import rajawali.materials.TextureInfo;
+import rajawali.math.Number3D;
 import rajawali.primitives.Cube;
 import rajawali.renderer.AFrameTask;
 import rajawali.renderer.EmptyTask;
@@ -94,13 +95,6 @@ public class RajawaliScene extends AFrameTask {
 	 */
 	private LinkedList<AFrameTask> mFrameTaskQueue;
 
-	/**
-	 * Default to not using scene graph. This is for backwards
-	 * compatibility as well as efficiency for simple scenes.
-	 * NOT THREAD SAFE, as it is not expected to be changed beyond
-	 * initScene().
-	 */
-	protected boolean mUseSceneGraph = false;
 	protected boolean mDisplaySceneGraph = false;
 	protected IGraphNode mSceneGraph; //The scenegraph for this scene
 	protected GRAPH_TYPE mSceneGraphType = GRAPH_TYPE.NONE; //The type of graph type for this scene.
@@ -138,6 +132,32 @@ public class RajawaliScene extends AFrameTask {
 			break;
 		default:
 			break;
+		}
+	}
+	
+	/**
+	 * Fetch the minimum bounds of the scene.
+	 * 
+	 * @return {@link Number3D} containing the minimum values along each axis.
+	 */
+	public Number3D getSceneMinBound() {
+		if (mSceneGraph != null) {
+			return mSceneGraph.getSceneMinBound();
+		} else {
+			return new Number3D(Float.MIN_VALUE, Float.MIN_VALUE, Float.MIN_VALUE);
+		}
+	}
+	
+	/**
+	 * Fetch the maximum bounds of the scene.
+	 * 
+	 * @return {@link Number3D} containing the maximum values along each axis.
+	 */
+	public Number3D getSceneMaxBound() {
+		if (mSceneGraph != null) {
+			return mSceneGraph.getSceneMaxBound();
+		} else {
+			return new Number3D(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE);
 		}
 	}
 	
@@ -994,7 +1014,7 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleAddTask(AFrameTask)}
 	 * 
-	 * @param anim {@link AFrameTask} The new animation for the specified index.
+	 * @param anim {@link AFrameTask} The old animation.
 	 * @param replace {@link Animation3D} The animation replacing the old animation.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
@@ -1002,7 +1022,7 @@ public class RajawaliScene extends AFrameTask {
 		if (index != AFrameTask.UNUSED_INDEX) {
 			mAnimations.set(index, replace);
 		} else {
-			mAnimations.set(mAnimations.indexOf(replace), (Animation3D) anim);
+			mAnimations.set(mAnimations.indexOf(anim), replace);
 		}
 	}
 	
@@ -1054,7 +1074,7 @@ public class RajawaliScene extends AFrameTask {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleReplaceTask(AFrameTask)}
 	 * 
-	 * @param camera {@link Camera} The new camera for the specified index.
+	 * @param camera {@link Camera} The old camera.
 	 * @param replace {@link Camera} The camera replacing the old camera.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
@@ -1062,7 +1082,7 @@ public class RajawaliScene extends AFrameTask {
 		if (index != AFrameTask.UNUSED_INDEX) {
 			mCameras.set(index, replace);
 		} else {
-			mCameras.set(mCameras.indexOf(replace), (Camera) camera);
+			mCameras.set(mCameras.indexOf(camera), replace);
 		}
 		//TODO: Handle camera replacement in scenegraph
 	}
@@ -1164,7 +1184,7 @@ public class RajawaliScene extends AFrameTask {
 		if (index != AFrameTask.UNUSED_INDEX) {
 			mChildren.set(index, replace);
 		} else {
-			mChildren.set(mChildren.indexOf(replace), (BaseObject3D) child);
+			mChildren.set(mChildren.indexOf(child), replace);
 		}
 		//TODO: Handle child replacement in scene graph
 	}
@@ -1266,7 +1286,7 @@ public class RajawaliScene extends AFrameTask {
 		if (index != AFrameTask.UNUSED_INDEX) {
 			mPlugins.set(index, replace);
 		} else {
-			mPlugins.set(mPlugins.indexOf(replace), (IRendererPlugin) plugin);
+			mPlugins.set(mPlugins.indexOf(plugin), replace);
 		}
 		//TODO: Handle replace plugins
 	}

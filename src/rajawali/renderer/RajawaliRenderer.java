@@ -771,7 +771,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	 * {@link AFrameTask.UNUSED_INDEX} then it will be used, otherwise the replace
 	 * object is used. Should only be called through {@link #handleAddTask(AFrameTask)}
 	 * 
-	 * @param scene {@link AFrameTask} The new scene for the specified index.
+	 * @param scene {@link AFrameTask} The old scene.
 	 * @param replace {@link RajawaliScene} The scene replacing the old scene.
 	 * @param index integer index to effect. Set to {@link AFrameTask.UNUSED_INDEX} if not used.
 	 */
@@ -779,7 +779,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 		if (index != AFrameTask.UNUSED_INDEX) {
 			mScenes.set(index, replace);
 		} else {
-			mScenes.set(mScenes.indexOf(replace), (RajawaliScene) scene);
+			mScenes.set(mScenes.indexOf(scene), replace);
 		}
 	}
 	
