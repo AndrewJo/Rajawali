@@ -115,23 +115,23 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
-	* Sets the {@link RajawaliScene} currently being displayed.
+	* Switches the {@link RajawaliScene} currently being displayed.
 	* 
 	* @param scene {@link RajawaliScene} object to display.
 	*/
-	public void setScene(RajawaliScene scene) {
+	public void switchScene(RajawaliScene scene) {
 		synchronized (mNextSceneLock) {
 			mNextScene = scene;
 		}
 	}
 
 	/**
-	* Sets the {@link RajawaliScene} currently being displayed.
+	* Switches the {@link RajawaliScene} currently being displayed.
 	* 
 	* @param scene Index of the {@link RajawaliScene} to use.
 	*/
-	public void setScene(int scene) {
-		setScene(mScenes.get(scene));
+	public void switchScene(int scene) {
+		switchScene(mScenes.get(scene));
 	}
 	
 	/**
@@ -161,6 +161,10 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	* in the list. This does not validate the index, so if it is not
 	* contained in the list already, an exception will be thrown.
 	* 
+	* If the {@link RajawaliScene} being replaced is
+	* the one in current use, the replacement will be selected on the next
+	* frame.
+	* 
 	* @param scene {@link RajawaliScene} object to add.
 	* @param location Integer index of the {@link RajawaliScene} to replace.
 	* @return boolean True if the replace task was successfully queued.
@@ -171,7 +175,9 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	
 	/**
 	* Replaces the specified {@link RajawaliScene} in the renderer with the
-	* new one.
+	* new one. If the {@link RajawaliScene} being replaced is
+	* the one in current use, the replacement will be selected on the next
+	* frame.
 	* 
 	* @param oldScene {@link RajawaliScene} object to be replaced.
 	* @param newScene {@link RajawaliScene} which will replace the old.
@@ -203,7 +209,9 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	}
 	
 	/**
-	 * Removes a {@link RajawaliScene} from the renderer.
+	 * Removes a {@link RajawaliScene} from the renderer. If the {@link RajawaliScene}
+	 * being removed is the one in current use, the 0 index {@link RajawaliScene}
+	 * will be selected on the next frame.
 	 * 
 	 * @param scene {@link RajawaliScene} object to be removed.
 	 * @return boolean True if the removal was successfully queued.
@@ -229,13 +237,13 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	*/
 	public boolean addAndSwitchScene(RajawaliScene scene) {
 		boolean success = addScene(scene);
-		setScene(scene);
+		switchScene(scene);
 		return success;
 	}
 
 	/**
-	* Replaces a {@link RajawaliScene} at the specified index with an switching to it
-	* immediately.
+	* Replaces a {@link RajawaliScene} at the specified index, switching to the
+	* replacement immediately on the next frame. This does not validate the index.
 	* 
 	* @param scene The {@link RajawaliScene} to add.
 	* @param location The index of the scene to replace.
@@ -243,13 +251,14 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	*/
 	public boolean replaceAndSwitchScene(RajawaliScene scene, int location) {
 		boolean success = replaceScene(scene, location);
-		setScene(scene);
+		switchScene(scene);
 		return success;
 	}
 	
 	/**
 	* Replaces the specified {@link RajawaliScene} in the renderer with the
-	* new one, switching to it immediately. If the scene does not exist, nothing will happen.
+	* new one, switching to it immediately on the next frame. If the scene to
+	* replace does not exist, nothing will happen.
 	* 
 	* @param oldScene {@link RajawaliScene} object to be replaced.
 	* @param newScene {@link RajawaliScene} which will replace the old.
@@ -257,7 +266,7 @@ public class RajawaliRenderer implements GLSurfaceView.Renderer, INode {
 	*/
 	public boolean replaceAndSwitchScene(RajawaliScene oldScene, RajawaliScene newScene) {
 		boolean success = queueReplaceTask(oldScene, newScene);
-		setScene(newScene);
+		switchScene(newScene);
 		return success;
 	}
 	

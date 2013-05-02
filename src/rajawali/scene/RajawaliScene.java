@@ -162,23 +162,23 @@ public class RajawaliScene extends AFrameTask {
 	}
 	
 	/**
-	* Sets the {@link Camera} currently being used to display the scene.
+	* Switches the {@link Camera} currently being used to display the scene.
 	* 
 	* @param mCamera {@link Camera} object to display the scene with.
 	*/
-	public void setCamera(Camera camera) {
+	public void switchCamera(Camera camera) {
 		synchronized (mNextCameraLock) {
 			mNextCamera = camera;
 		}
 	}
 
 	/**
-	* Sets the {@link Camera} currently being used to display the scene.
+	* Switches the {@link Camera} currently being used to display the scene.
 	* 
 	* @param camera Index of the {@link Camera} to use.
 	*/
-	public void setCamera(int camera) {
-		setCamera(mCameras.get(camera));
+	public void switchCamera(int camera) {
+		switchCamera(mCameras.get(camera));
 	}
 
 	/**
@@ -225,7 +225,9 @@ public class RajawaliScene extends AFrameTask {
 	}
 	
 	/**
-	 * Removes a {@link Camera} from the scene. 
+	 * Removes a {@link Camera} from the scene. If the {@link Camera}
+	 * being removed is the one in current use, the 0 index {@link Camera}
+	 * will be selected on the next frame.
 	 * 
 	 * @param camera {@link Camera} object to remove.
 	 * @return boolean True if the removal was successfully queued.
@@ -239,6 +241,9 @@ public class RajawaliScene extends AFrameTask {
 	* in the list. This does not validate the index, so if it is not
 	* contained in the list already, an exception will be thrown.
 	* 
+	* If the {@link Camera} being replaced is the one in current use, 
+	* the replacement will be selected on the next frame.
+	* 
 	* @param camera {@link Camera} object to add.
 	* @param location Integer index of the camera to replace.
 	* @param boolean True if the replacement was successfully queued.
@@ -249,7 +254,9 @@ public class RajawaliScene extends AFrameTask {
 	
 	/**
 	* Replaces the specified {@link Camera} in the renderer with the
-	* provided {@link Camera}.
+	* provided {@link Camera}. If the {@link Camera} being replaced is
+	* the one in current use, the replacement will be selected on the next
+	* frame.
 	* 
 	* @param oldCamera {@link Camera} object to be replaced.
 	* @param newCamera {@link Camera} object replacing the old.
@@ -260,14 +267,14 @@ public class RajawaliScene extends AFrameTask {
 	}
 
 	/**
-	* Adds a {@link Camera}, switching to it immediately
+	* Adds a {@link Camera}, switching to it immediately.
 	* 
 	* @param camera The {@link Camera} to add.
 	* @return boolean True if the addition was successfully queued.
 	*/
 	public boolean addAndSwitchCamera(Camera camera) {
 		boolean success = addCamera(camera);
-		setCamera(camera);
+		switchCamera(camera);
 		return success;
 	}
 
@@ -281,7 +288,7 @@ public class RajawaliScene extends AFrameTask {
 	*/
 	public boolean replaceAndSwitchCamera(Camera camera, int location) {
 		boolean success = replaceCamera(camera, location);
-		setCamera(camera);
+		switchCamera(camera);
 		return success;
 	}
 	
@@ -295,7 +302,7 @@ public class RajawaliScene extends AFrameTask {
 	*/
 	public boolean replaceAndSwitchCamera(Camera oldCamera, Camera newCamera) {
 		boolean success = queueReplaceTask(oldCamera, newCamera);
-		setCamera(newCamera);
+		switchCamera(newCamera);
 		return success;
 	}
 	
