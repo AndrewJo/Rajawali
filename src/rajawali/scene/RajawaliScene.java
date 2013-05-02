@@ -1295,7 +1295,6 @@ public class RajawaliScene extends AFrameTask {
 		} else {
 			mPlugins.set(mPlugins.indexOf(plugin), replace);
 		}
-		//TODO: Handle replace plugins
 	}
 	
 	/**
